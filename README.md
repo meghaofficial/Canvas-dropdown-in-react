@@ -3,3 +3,6 @@ Going to create a new file, in which every image element should have cancel imag
 
 # My second commit 
 This code is working for delete and it is not showing up the icons on the corners
+
+# My third commit
+This code has problem with changing the custom corner cursor when hovering, need to fix it!

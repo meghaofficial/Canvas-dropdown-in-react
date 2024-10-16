@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react'
 import desktop from '../images/desktop.png';
 import internet from '../images/internet.png';
@@ -9,6 +9,31 @@ import edit from '../images/icons8-edit-32.png';
 const FabricDropDown = () => {
 
     const { editor, onReady } = useFabricJSEditor();
+
+    const setCornerCursor = () => {
+        if (editor) {
+            fabric.Canvas.prototype._setCornerCursor =  function(corner, target) {
+                if (corner === 'mtr' && target.hasRotatingPoint) {
+                    this.setCursor(this.rotationCursor);
+                    /*ADD*/
+                  }else if(corner == "tr" || corner == "bl" ){
+                      this.setCursor(''); 
+        
+                  }else if(corner == "tl" || corner == "br"){
+                      this.setCursor('pointer');  
+                  }			  
+                    /*ADD END*/
+                  else {
+                    this.setCursor(this.defaultCursor);
+                    return false;
+                  }
+            };
+        }
+    }
+
+    useEffect(() => {
+        setCornerCursor();
+    }, [editor]);
 
     let DIMICON = 30;
     // Hide controls
@@ -29,7 +54,7 @@ const FabricDropDown = () => {
         e.preventDefault();
 
         const imgSrc = e.dataTransfer.getData('imgSrc');
-
+        resize
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
                 left: e.clientX - 300,
@@ -38,119 +63,68 @@ const FabricDropDown = () => {
                 scaleY: 0.5,
                 hasControls: true,
                 selectable: true,
+                // hoverCursor: 'pointer'
             });
             editor?.canvas.add(img);
             img.setControlsVisibility(HideControls);
         });
 
         // Code
-        fabric.Object.prototype._drawControl = function (control, ctx, methodName, left, top) {
-            if (!this.isControlVisible(control)) {
-                return;
-            }
-            var SelectedIconImage = new Image();
-            console.log(`The selected image icon is - ${SelectedIconImage}`);
-            var size = this.cornerSize;
-            this.transparentCorners || ctx.clearRect(left, top, size, size);
-            switch (control) {
-                case 'tl':/*delete*/
-                    SelectedIconImage.src = cancel;
-                    break;
-                case 'tr':/*scale*/
-                    SelectedIconImage.src = dataImage[0];
-                    break;
-                case 'bl':/*scale*/
-                    SelectedIconImage.src = dataImage[0];
-                    break;
-                case 'br':/*rotate*/
-                    SelectedIconImage.src = dataImage[2];
-                    break;
-                default:
-                    ctx[methodName](left, top, size, size);
-            }
+        fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
+            // this.callSuper('drawControls', ctx, styleOverride);
+            var controls = ['tr', 'br'];
 
-            if (control == 'tl' || control == 'tr' || control == 'bl' || control == 'br') {
-                try {
-                    ctx.drawImage(SelectedIconImage, left, top, DIMICON, DIMICON);
-                } catch (e) {
-                    ctx[methodName](left, top, size, size);
+            controls.forEach((control) => {
+                if (this.isControlVisible(control)) {
+                    var size = this.cornerSize;
+                    var left = this.oCoords[control].x - size / 2;
+                    var top = this.oCoords[control].y - size / 2;
+                    var SelectedIconImage = new Image();
+
+                    switch (control) {
+                        case 'tl':
+                            SelectedIconImage.src = null;
+                            break;
+                        case 'tr':
+                            SelectedIconImage.src = cancel;
+                            break;
+                        case 'bl':
+                            SelectedIconImage.src = null;
+                            break;
+                        case 'br':
+                            SelectedIconImage.src = edit;
+                            break;
+                    }
+
+                    SelectedIconImage.onload = function () {
+                        ctx.drawImage(SelectedIconImage, left, top, size, size);
+                    };
+
+                    SelectedIconImage.onerror = function () {
+                        console.error('Failed to load control image for', control);
+                    };
                 }
-            }
-        }
-        // fabric.Object.prototype._drawControl = function (control, ctx, methodName, left, top) {
-        //     if (!this.isControlVisible(control)) {
-        //         return;
-        //     }
-        //     var SelectedIconImage = new Image();
-        //     var size = this.cornerSize;
-        //     this.transparentCorners || ctx.clearRect(left, top, size, size);
-        //     switch (control) {
-        //         case 'tl': // cancel (delete) icon
-        //             SelectedIconImage.src = cancel;
-        //             break;
-        //         case 'tr': // other icons...
-        //             SelectedIconImage.src = edit; // Ensure other icons have valid sources
-        //             break;
-        //         // Add other cases here for different controls
-        //         default:
-        //             ctx[methodName](left, top, size, size);
-        //             return; // Prevent further drawing if default case is hit
-        //     }
-
-        //     if (['tl', 'tr', 'bl', 'br'].includes(control)) {
-        //         try {
-        //             ctx.drawImage(SelectedIconImage, left, top, DIMICON, DIMICON); // Draw the icon
-        //         } catch (e) {
-        //             console.error('Error drawing icon:', e);
-        //             ctx[methodName](left, top, size, size); // Fallback to drawing the control if the icon fails
-        //         }
-        //     }
-        // };        
-
-        fabric.Canvas.prototype._setCornerCursor = function (corner, target) {
-            if (corner === 'mtr' && target.hasRotatingPoint) {
-                this.setCursor(this.rotationCursor);
-            } else if (corner == "tr" || corner == "bl") {
-                this.setCursor('sw-resize');
-
-            } else if (corner == "tl" || corner == "br") {
-                this.setCursor('pointer');
-            }
-            else {
-                this.setCursor(this.defaultCursor);
-                return false;
-            }
+            });
         };
+        
+        setCornerCursor(); //setting up corner cursor
+
         fabric.Canvas.prototype._getActionFromCorner = function (target, corner) {
             if (!corner) {
                 console.error('No corner selected');
-                console.log()
-                return 'drag';
+                return 'custom_drag';
             }
             var action = 'drag';
             if (corner) {
                 switch (corner) {
-                    case 'ml':
-                    case 'mr':
-                        action = 'scaleX';
-                        break;
-                    case 'mt':
-                    case 'mb':
-                        action = 'scaleY';
-                        break;
-                    case 'mtr':
-                        action = 'rotate';
-                        break;
-                    /**ADD **/
                     case 'br':
-                        action = 'rotate';
+                        action = 'edit';
                         break;
-                    case 'tl'://delete function if mouse down
+                    case 'tr':
                         action = 'delete';
                         editor?.canvas.remove(editor?.canvas.getActiveObject());
                         break;
-                    /**ADD END**/
-                    default: action = 'scale';
+                    default: action = 'drag';
                 }
                 console.log(`Action for corner ${corner}: ${action}`);
                 return action;
@@ -162,42 +136,30 @@ const FabricDropDown = () => {
             const target = transform.target;
             const action = transform.action;
 
-            console.log(`Performing action: ${action}`); // Debug log
+            // console.log(`Performing action: ${action}`); 
 
             switch (action) {
-                case 'rotate':
-                    this._rotateObject(x, y);
-                    this._fire('rotating', target, e);
-                    break;
-                case 'scale':
-                    this._onScale(e, transform, x, y);
-                    this._fire('scaling', target, e);
-                    break;
-                case 'scaleX':
-                    this._scaleObject(x, y, 'x');
-                    this._fire('scaling', target, e);
-                    break;
-                case 'scaleY':
-                    this._scaleObject(x, y, 'y');
-                    this._fire('scaling', target, e);
+                case 'edit':
+                    console.log("clicked edit");
                     break;
                 case 'delete':
-                    // Do nothing for delete during movement
+                    console.log("clicked delete");
                     break;
                 default:
-                    this._translateObject(x, y);
-                    this._fire('moving', target, e);
+                    target.set({
+                        left: x,
+                        top: y
+                    });
+                    // target.setControlsVisibility({
+                    //     tr: false,
+                    //     br: false,
+                    // });
+                    this.renderAll();
+                    this.fire('moving', target, e);
                     this.setCursor(this.moveCursor);
                     break;
             }
         };
-
-        // fabric.Image.fromURL('http://serio.piiym.net/CVBla/txtboard/thumb/1260285874089s.jpg', function (img) {
-        //     img.top = 60;
-        //     img.left = 250;
-        //     img.setControlsVisibility(HideControls);
-        //     editor?.canvas.add(img);
-        // });
 
         editor?.canvas.renderAll();
     };
