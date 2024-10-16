@@ -6,3 +6,6 @@ This code is working for delete and it is not showing up the icons on the corner
 
 # My third commit
 This code has problem with changing the custom corner cursor when hovering, need to fix it!
+
+# My forth commit
+This code has introduced form, but the form is not opening for the different image object.

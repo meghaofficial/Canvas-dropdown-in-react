@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react'
 import desktop from '../images/desktop.png';
 import internet from '../images/internet.png';
@@ -9,31 +9,30 @@ import edit from '../images/icons8-edit-32.png';
 const FabricDropDown = () => {
 
     const { editor, onReady } = useFabricJSEditor();
+    const [isOpen, setIsOpen] = useState(false);
+    const [activeFormDetails, setActiveFormDetails] = useState([]);
+    // { id: 0, canvasID: 0, name: "", imageName: "", coords: { x: 0, y: 0 } }
 
     const setCornerCursor = () => {
         if (editor) {
-            fabric.Canvas.prototype._setCornerCursor =  function(corner, target) {
+            fabric.Canvas.prototype._setCornerCursor = function (corner, target) {
                 if (corner === 'mtr' && target.hasRotatingPoint) {
                     this.setCursor(this.rotationCursor);
                     /*ADD*/
-                  }else if(corner == "tr" || corner == "bl" ){
-                      this.setCursor(''); 
-        
-                  }else if(corner == "tl" || corner == "br"){
-                      this.setCursor('pointer');  
-                  }			  
-                    /*ADD END*/
-                  else {
+                } else if (corner == "tr" || corner == "bl") {
+                    this.setCursor('');
+
+                } else if (corner == "tl" || corner == "br") {
+                    this.setCursor('pointer');
+                }
+                /*ADD END*/
+                else {
                     this.setCursor(this.defaultCursor);
                     return false;
-                  }
+                }
             };
         }
     }
-
-    useEffect(() => {
-        setCornerCursor();
-    }, [editor]);
 
     let DIMICON = 30;
     // Hide controls
@@ -54,7 +53,6 @@ const FabricDropDown = () => {
         e.preventDefault();
 
         const imgSrc = e.dataTransfer.getData('imgSrc');
-        resize
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
                 left: e.clientX - 300,
@@ -68,6 +66,12 @@ const FabricDropDown = () => {
             editor?.canvas.add(img);
             img.setControlsVisibility(HideControls);
         });
+        setActiveFormDetails((prevDetails) => {
+            const coords = { coords: { x: e.clientX - 300, y: e.clientY - 100 } }
+            console.log(coords)
+            return [...prevDetails, coords]
+        });
+        console.log(activeFormDetails.coords)
 
         // Code
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
@@ -106,7 +110,7 @@ const FabricDropDown = () => {
                 }
             });
         };
-        
+
         setCornerCursor(); //setting up corner cursor
 
         fabric.Canvas.prototype._getActionFromCorner = function (target, corner) {
@@ -119,6 +123,7 @@ const FabricDropDown = () => {
                 switch (corner) {
                     case 'br':
                         action = 'edit';
+                        handleOpenForm();
                         break;
                     case 'tr':
                         action = 'delete';
@@ -140,7 +145,7 @@ const FabricDropDown = () => {
 
             switch (action) {
                 case 'edit':
-                    console.log("clicked edit");
+                    console.log("clicked edit")
                     break;
                 case 'delete':
                     console.log("clicked delete");
@@ -163,6 +168,15 @@ const FabricDropDown = () => {
 
         editor?.canvas.renderAll();
     };
+
+    function handleOpenForm() {
+        console.log("Form is opened");
+        setIsOpen(true);
+    }
+
+    useEffect(() => {
+        setCornerCursor();
+    }, [editor]);
 
     return (
         <>
@@ -206,6 +220,40 @@ const FabricDropDown = () => {
                             onReady={onReady}
                             className="sample-canvas border border-gray-700 h-[100%] w-[100%]"
                         />
+                        {/* Form */}
+                        {
+                            isOpen && (
+                                <div
+                                    className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
+                                    style={{ left: activeFormDetails[0]?.coords?.x, top: activeFormDetails[0]?.coords?.y }}
+                                >
+                                    <div className='cursor-pointer flex items-center justify-between'>
+                                        <p>id</p>
+                                        {/* <FaWindowClose /> */}
+                                    </div>
+                                    <label className='flex items-center justify-between'>
+                                        Your Name
+                                        <input
+                                            type="text"
+                                            className="border p-1 m-1"
+                                        />
+                                    </label>
+                                    <label className='flex items-center justify-between'>
+                                        Image Name
+                                        <input
+                                            type="text"
+                                            className="border p-1 m-1"
+                                        />
+                                    </label>
+                                    <br />
+                                    <button
+                                        className="bg-blue-500 text-white p-2 mt-2"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            )
+                        }
                     </div>
                 </div>
             </div>
