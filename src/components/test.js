@@ -197,3 +197,56 @@ canvas.on('mouse:down', function (e) {
     }
 
 });
+
+
+
+
+
+
+const handleSaveForm = () => {
+    const { formID, yourName, imageName, fabricText, fabricImage } = activeForm;
+
+    if (!yourName || !imageName) {
+        console.warn("Both name and image name are required!");
+    } else {
+        if (fabricText) {
+            const x3 = fabricImage.aCoords.bl.x;
+            const y3 = fabricImage.aCoords.bl.y;
+            const x4 = fabricImage.aCoords.br.x;
+            const y4 = fabricImage.aCoords.br.y;
+            fabricText.set("text", imageName);
+            fabricText.set({ left: (x3 + x4) / 2 - fabricText.width / 2, top: (y3 + y4) / 2 + 6, })
+            editor?.canvas.renderAll();
+        }
+
+        const imageBase64 = fabricImage.toDataURL();
+
+        setCanvaImages(prevCanvaImages => {
+            const updatedCanvaImages = prevCanvaImages.map((img) =>
+                img.id === formID ? { ...img, name: imageName } : img
+            );
+            return updatedCanvaImages;
+        });
+
+        let formArray = JSON.parse(localStorage.getItem('Forms')) || [];
+        const existingID = formArray.find(elem => elem.formID === formID);
+        if (existingID) {
+            existingID.yourName = yourName;
+            existingID.imageName = imageName;
+            existingID.imageBase64 = imageBase64;
+            const filteredObj = formArray.filter(elem => elem.formID !== formID);
+            filteredObj.push(existingID);
+            filteredObj.sort((a, b) => a.formID - b.formID);
+            localStorage.setItem('Forms', JSON.stringify(filteredObj));
+            setForms(filteredObj);
+        }
+        else {
+            // formArray.push(activeForm);
+            formArray.push({ ...activeForm, imageBase64 });
+            localStorage.setItem('Forms', JSON.stringify(formArray));
+            setForms(formArray);
+        }
+
+        setFormOpen(false);
+    }
+};

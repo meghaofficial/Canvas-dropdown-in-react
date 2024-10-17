@@ -5,13 +5,17 @@ import internet from '../images/internet.png';
 import workstation from '../images/workstation.png';
 import cancel from '../images/icons8-cancel-30.png';
 import edit from '../images/icons8-edit-32.png';
+import dot from '../images/icons8-dot-15.png';
 import { FaWindowClose } from "react-icons/fa";
+
 let objID = 0;
+
 const FabricDropDown = () => {
 
     const { editor, onReady } = useFabricJSEditor();
     const [activeFormDetails, setActiveFormDetails] = useState(null);
     const [formOpen, setFormOpen] = useState(true);
+    const [forms, setForms] = useState([]);
 
     const setCornerCursor = () => {
         if (editor) {
@@ -43,17 +47,29 @@ const FabricDropDown = () => {
         'mtr': false
     };
 
-    // let objID = 0;
-
     // Handle drop event
     const handleDrop = (e) => {
         e.preventDefault();
 
         objID++;
         const imgSrc = e.dataTransfer.getData('imgSrc');
+        let imgName = "";
+        switch(imgSrc){
+            case desktop: 
+                imgName = "Desktop";
+                break;
+            case internet:
+                imgName = "Internet";
+                break;
+            case workstation:
+                imgName = "Workstation";
+                break;
+        }
+
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
                 id: objID,
+                name: imgName,
                 left: e.clientX - 300,
                 top: e.clientY - 100,
                 scaleX: 0.5,
@@ -66,7 +82,7 @@ const FabricDropDown = () => {
         });
 
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
-            var controls = ['tr', 'br'];
+            var controls = ['tr', 'br', 'bl'];
 
             controls.forEach((control) => {
                 if (this.isControlVisible(control)) {
@@ -83,7 +99,7 @@ const FabricDropDown = () => {
                             SelectedIconImage.src = cancel;
                             break;
                         case 'bl':
-                            SelectedIconImage.src = null;
+                            SelectedIconImage.src = dot;
                             break;
                         case 'br':
                             SelectedIconImage.src = edit;
@@ -155,9 +171,26 @@ const FabricDropDown = () => {
         setActiveFormDetails({
             id: target.id,
             coords: { x, y },
-            name: '',
-            imageName: ''
+            name: 'Megha',
+            imageName: target.name
         });
+    }
+
+    const handleSaveForm = () => {
+        const { id, name, imageName } = activeFormDetails;
+        if (!name || !imageName){
+            console.warn("Please do not leave any field");
+            return;
+        }
+        else{
+            setForms(prevForms => {
+                const newForm = { id, name, imageName };
+                const allForms = [...prevForms, newForm];
+                localStorage.setItem('Forms', JSON.stringify(allForms));
+                return allForms;
+            });
+            setFormOpen(false);
+        }
     }
 
     useEffect(() => {
@@ -246,6 +279,7 @@ const FabricDropDown = () => {
                                 <br />
                                 <button
                                     className="bg-blue-500 text-white p-2 mt-2"
+                                    onClick={handleSaveForm}
                                 >
                                     Save
                                 </button>
