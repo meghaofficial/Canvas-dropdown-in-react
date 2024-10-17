@@ -19,3 +19,6 @@ Fixed id populating and added cancel button functionality in the form
 
 ##### LocalStorage
 Saving the form to local storage 
+
+##### Connector
+Created connector but still problem with when object is moving, the connector should move with the moving object.

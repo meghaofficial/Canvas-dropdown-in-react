@@ -54,8 +54,8 @@ const FabricDropDown = () => {
         objID++;
         const imgSrc = e.dataTransfer.getData('imgSrc');
         let imgName = "";
-        switch(imgSrc){
-            case desktop: 
+        switch (imgSrc) {
+            case desktop:
                 imgName = "Desktop";
                 break;
             case internet:
@@ -134,6 +134,10 @@ const FabricDropDown = () => {
                         action = 'delete';
                         editor?.canvas.remove(editor?.canvas.getActiveObject());
                         break;
+                    case 'bl':
+                        action = 'connect';
+                        handleCreateConnector(e, e.clientX, e.clientY, target);
+                        break;
                     default:
                         action = 'drag';
                 }
@@ -150,6 +154,8 @@ const FabricDropDown = () => {
                 case 'edit':
                     break;
                 case 'delete':
+                    break;
+                case 'connect':
                     break;
                 default:
                     target.set({
@@ -178,11 +184,11 @@ const FabricDropDown = () => {
 
     const handleSaveForm = () => {
         const { id, name, imageName } = activeFormDetails;
-        if (!name || !imageName){
+        if (!name || !imageName) {
             console.warn("Please do not leave any field");
             return;
         }
-        else{
+        else {
             setForms(prevForms => {
                 const newForm = { id, name, imageName };
                 const allForms = [...prevForms, newForm];
@@ -191,6 +197,139 @@ const FabricDropDown = () => {
             });
             setFormOpen(false);
         }
+    }
+
+    // function handleCreateConnector(e, x, y, target) {
+    //     let curve;
+    //     let arrow;
+    //     target.on('mousedown', function (options) {
+
+    //         let tempCurve = null;
+    //         let tempArrow = null;
+    //         const blCoords = target.oCoords.bl;
+
+    //         const startX = blCoords.x;
+    //         const startY = blCoords.y;
+
+    //         target.on('mousemove', function (options) {
+    //             const endX = options.absolutePointer.x;
+    //             const endY = options.absolutePointer.y;
+
+    //             if (tempCurve) {
+    //                 editor?.canvas.remove(tempCurve);
+    //             }
+    //             if (tempArrow) {
+    //                 editor?.canvas.remove(tempArrow);
+    //             }
+    //             tempCurve = new fabric.Path(
+    //                 `M ${startX} ${startY} Q ${(startX + endX) / 2}, ${(startY + endY) / 2 - 100}, ${endX}, ${endY}`,
+    //                 { stroke: '#666', strokeWidth: 3, fill: '', selectable: false, evented: false }
+    //             );
+    //             tempArrow = new fabric.Triangle({
+    //                 width: 15,
+    //                 height: 15,
+    //                 fill: 'red',
+    //                 left: endX,
+    //                 top: endY,
+    //                 angle: Math.atan2(editor?.canvas.onendY - startY, endX - startX) * 180 / Math.PI + 90,
+    //                 originX: 'center',
+    //                 originY: 'center',
+    //                 selectable: false,
+    //                 evented: false
+    //             });
+    //             curve = tempCurve;
+    //             arrow = tempArrow;
+    //             editor?.canvas.add(tempCurve);
+    //             editor?.canvas.add(tempArrow);
+    //             editor?.canvas.renderAll();
+    //             // if (options.target && options.target.__corner === 'bl') {
+    //             //     console.log(options.absolutePointer.y)
+    //             //     console.log(y)
+    //             // }
+    //         })
+    //         target.on('mouseup', function (options) {
+    //             // if (options.target && options.target.__corner === 'bl') {
+    //             //     console.log("mouse up from bottom-left (dot)");
+    //             // }
+    //             console.log(options.target.type)
+    //         });
+    //     });
+
+    //     // target.on('mouseup', function (options) {
+    //     //     if (options.target && options.target.__corner === 'bl') {
+    //     //         console.log("mouse up from bottom-left (dot)");
+    //     //     }
+    //     // });
+    // }
+
+    function handleCreateConnector(e, x, y, target) {
+        let tempCurve = null;
+        let tempArrow = null;
+        const blCoords = target.oCoords.bl;
+
+        const startX = blCoords.x;
+        const startY = blCoords.y;
+
+        editor?.canvas.on('mouse:down', function (options) {
+            if (options.target === target && options.target.__corner === 'bl') {
+                editor?.canvas.on('mouse:move', function (options) {
+                    const endX = options.absolutePointer.x;
+                    const endY = options.absolutePointer.y;
+
+                    // Remove previous curve and arrow
+                    if (tempCurve) {
+                        editor?.canvas.remove(tempCurve);
+                    }
+                    if (tempArrow) {
+                        editor?.canvas.remove(tempArrow);
+                    }
+
+                    // Draw the curve
+                    tempCurve = new fabric.Path(
+                        `M ${startX} ${startY} Q ${(startX + endX) / 2}, ${(startY + endY) / 2 - 100}, ${endX}, ${endY}`,
+                        { stroke: '#666', strokeWidth: 3, fill: '', selectable: false, evented: false }
+                    );
+
+                    // Draw the arrow at the endpoint
+                    tempArrow = new fabric.Triangle({
+                        width: 15,
+                        height: 15,
+                        fill: 'red',
+                        left: endX,
+                        top: endY,
+                        angle: Math.atan2(endY - startY, endX - startX) * 180 / Math.PI + 90,
+                        originX: 'center',
+                        originY: 'center',
+                        selectable: false,
+                        evented: false
+                    });
+
+                    editor?.canvas.add(tempCurve);
+                    editor?.canvas.add(tempArrow);
+                    editor?.canvas.renderAll();
+                });
+
+                // Mouse up to stop drawing the curve
+                editor?.canvas.on('mouse:up', function (options) {
+                    editor?.canvas.off('mouse:move');
+
+                    if (!options.currentTarget) {
+                        editor?.canvas.remove(tempCurve);
+                        editor?.canvas.remove(tempArrow);
+                        tempCurve = null;
+                        tempArrow = null;
+                    }
+                    else {
+                        if (tempCurve && tempArrow) {
+                            editor?.canvas.add(tempCurve);
+                            editor?.canvas.add(tempArrow);
+                            editor?.canvas.renderAll();
+                        }
+                        editor?.canvas.off('mouse:up');
+                    }
+                });
+            }
+        });
     }
 
     useEffect(() => {
