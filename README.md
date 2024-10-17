@@ -22,3 +22,6 @@ Saving the form to local storage
 
 ##### Connector
 Created connector but still problem with when object is moving, the connector should move with the moving object.
+
+##### Fixed 3
+Cancel, Edit and Connector icons were not moving with the image object but now it is moving
