@@ -13,3 +13,6 @@ This code has introduced form, but the form is not opening for the different ima
 
 ### Fixed
 Fixed different form opening for different object images, also fixed the position of form for different object.
+
+##### Fixed 2
+Fixed id populating and added cancel button functionality in the form

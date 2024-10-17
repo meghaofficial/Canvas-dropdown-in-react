@@ -5,11 +5,13 @@ import internet from '../images/internet.png';
 import workstation from '../images/workstation.png';
 import cancel from '../images/icons8-cancel-30.png';
 import edit from '../images/icons8-edit-32.png';
-
+import { FaWindowClose } from "react-icons/fa";
+let objID = 0;
 const FabricDropDown = () => {
 
     const { editor, onReady } = useFabricJSEditor();
     const [activeFormDetails, setActiveFormDetails] = useState(null);
+    const [formOpen, setFormOpen] = useState(true);
 
     const setCornerCursor = () => {
         if (editor) {
@@ -41,13 +43,17 @@ const FabricDropDown = () => {
         'mtr': false
     };
 
+    // let objID = 0;
+
     // Handle drop event
     const handleDrop = (e) => {
         e.preventDefault();
 
+        objID++;
         const imgSrc = e.dataTransfer.getData('imgSrc');
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
+                id: objID,
                 left: e.clientX - 300,
                 top: e.clientY - 100,
                 scaleX: 0.5,
@@ -106,7 +112,7 @@ const FabricDropDown = () => {
                 switch (corner) {
                     case 'br':
                         action = 'edit';
-                        handleOpenForm(e.clientX, e.clientY);
+                        handleOpenForm(e.clientX, e.clientY, target);
                         break;
                     case 'tr':
                         action = 'delete';
@@ -144,9 +150,10 @@ const FabricDropDown = () => {
         editor?.canvas.renderAll();
     };
 
-    function handleOpenForm(x, y) {
+    function handleOpenForm(x, y, target) {
+        setFormOpen(true);
         setActiveFormDetails({
-            id: 1,
+            id: target.id,
             coords: { x, y },
             name: '',
             imageName: ''
@@ -199,13 +206,14 @@ const FabricDropDown = () => {
                         />
 
                         {/* Form */}
-                        {activeFormDetails && (
+                        {activeFormDetails && formOpen && (
                             <div
                                 className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
                                 style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}
                             >
-                                <div className='cursor-pointer flex items-center justify-between'>
+                                <div className='cursor-pointer flex items-center justify-between' onClick={() => setFormOpen(false)}>
                                     <p>ID: {activeFormDetails.id}</p>
+                                    <FaWindowClose />
                                 </div>
                                 <label className='flex items-center justify-between'>
                                     Your Name
