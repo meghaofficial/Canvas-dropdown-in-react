@@ -9,33 +9,26 @@ import edit from '../images/icons8-edit-32.png';
 const FabricDropDown = () => {
 
     const { editor, onReady } = useFabricJSEditor();
-    const [isOpen, setIsOpen] = useState(false);
-    const [activeFormDetails, setActiveFormDetails] = useState([]);
-    // { id: 0, canvasID: 0, name: "", imageName: "", coords: { x: 0, y: 0 } }
+    const [activeFormDetails, setActiveFormDetails] = useState(null);
 
     const setCornerCursor = () => {
         if (editor) {
             fabric.Canvas.prototype._setCornerCursor = function (corner, target) {
                 if (corner === 'mtr' && target.hasRotatingPoint) {
                     this.setCursor(this.rotationCursor);
-                    /*ADD*/
-                } else if (corner == "tr" || corner == "bl") {
+                } else if (corner === "tr" || corner === "bl") {
                     this.setCursor('');
-
-                } else if (corner == "tl" || corner == "br") {
+                } else if (corner === "tl" || corner === "br") {
                     this.setCursor('pointer');
-                }
-                /*ADD END*/
-                else {
+                } else {
                     this.setCursor(this.defaultCursor);
                     return false;
                 }
             };
         }
-    }
+    };
 
     let DIMICON = 30;
-    // Hide controls
     const HideControls = {
         'tl': true,
         'tr': true,
@@ -61,21 +54,12 @@ const FabricDropDown = () => {
                 scaleY: 0.5,
                 hasControls: true,
                 selectable: true,
-                // hoverCursor: 'pointer'
             });
             editor?.canvas.add(img);
             img.setControlsVisibility(HideControls);
         });
-        setActiveFormDetails((prevDetails) => {
-            const coords = { coords: { x: e.clientX - 300, y: e.clientY - 100 } }
-            console.log(coords)
-            return [...prevDetails, coords]
-        });
-        console.log(activeFormDetails.coords)
 
-        // Code
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
-            // this.callSuper('drawControls', ctx, styleOverride);
             var controls = ['tr', 'br'];
 
             controls.forEach((control) => {
@@ -111,11 +95,10 @@ const FabricDropDown = () => {
             });
         };
 
-        setCornerCursor(); //setting up corner cursor
+        setCornerCursor();
 
-        fabric.Canvas.prototype._getActionFromCorner = function (target, corner) {
+        fabric.Canvas.prototype._getActionFromCorner = function (alreadySelected, corner, e, target) {
             if (!corner) {
-                console.error('No corner selected');
                 return 'custom_drag';
             }
             var action = 'drag';
@@ -123,42 +106,34 @@ const FabricDropDown = () => {
                 switch (corner) {
                     case 'br':
                         action = 'edit';
-                        handleOpenForm();
+                        handleOpenForm(e.clientX, e.clientY);
                         break;
                     case 'tr':
                         action = 'delete';
                         editor?.canvas.remove(editor?.canvas.getActiveObject());
                         break;
-                    default: action = 'drag';
+                    default:
+                        action = 'drag';
                 }
-                console.log(`Action for corner ${corner}: ${action}`);
                 return action;
             }
-        }
+        };
 
         fabric.Canvas.prototype._performTransformAction = function (e, transform, pointer) {
             const { x, y } = pointer;
             const target = transform.target;
             const action = transform.action;
 
-            // console.log(`Performing action: ${action}`); 
-
             switch (action) {
                 case 'edit':
-                    console.log("clicked edit")
                     break;
                 case 'delete':
-                    console.log("clicked delete");
                     break;
                 default:
                     target.set({
                         left: x,
                         top: y
                     });
-                    // target.setControlsVisibility({
-                    //     tr: false,
-                    //     br: false,
-                    // });
                     this.renderAll();
                     this.fire('moving', target, e);
                     this.setCursor(this.moveCursor);
@@ -169,9 +144,13 @@ const FabricDropDown = () => {
         editor?.canvas.renderAll();
     };
 
-    function handleOpenForm() {
-        console.log("Form is opened");
-        setIsOpen(true);
+    function handleOpenForm(x, y) {
+        setActiveFormDetails({
+            id: 1,
+            coords: { x, y },
+            name: '',
+            imageName: ''
+        });
     }
 
     useEffect(() => {
@@ -181,7 +160,6 @@ const FabricDropDown = () => {
     return (
         <>
             <div className='flex'>
-                {/* Navigation bar */}
                 <div className='flex flex-col items-center justify-evenly w-[15%] overflow-y-auto border border-gray-400 h-[100vh]'>
                     <div>
                         <img
@@ -209,7 +187,6 @@ const FabricDropDown = () => {
                     </div>
                 </div>
 
-                {/* Canvas */}
                 <div className='w-[85%] h-[100vh] flex items-center ps-3'>
                     <div
                         className="h-[100%] w-[100%] border border-gray-400"
@@ -220,45 +197,57 @@ const FabricDropDown = () => {
                             onReady={onReady}
                             className="sample-canvas border border-gray-700 h-[100%] w-[100%]"
                         />
+
                         {/* Form */}
-                        {
-                            isOpen && (
-                                <div
-                                    className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
-                                    style={{ left: activeFormDetails[0]?.coords?.x, top: activeFormDetails[0]?.coords?.y }}
-                                >
-                                    <div className='cursor-pointer flex items-center justify-between'>
-                                        <p>id</p>
-                                        {/* <FaWindowClose /> */}
-                                    </div>
-                                    <label className='flex items-center justify-between'>
-                                        Your Name
-                                        <input
-                                            type="text"
-                                            className="border p-1 m-1"
-                                        />
-                                    </label>
-                                    <label className='flex items-center justify-between'>
-                                        Image Name
-                                        <input
-                                            type="text"
-                                            className="border p-1 m-1"
-                                        />
-                                    </label>
-                                    <br />
-                                    <button
-                                        className="bg-blue-500 text-white p-2 mt-2"
-                                    >
-                                        Save
-                                    </button>
+                        {activeFormDetails && (
+                            <div
+                                className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
+                                style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}
+                            >
+                                <div className='cursor-pointer flex items-center justify-between'>
+                                    <p>ID: {activeFormDetails.id}</p>
                                 </div>
-                            )
-                        }
+                                <label className='flex items-center justify-between'>
+                                    Your Name
+                                    <input
+                                        type="text"
+                                        className="border p-1 m-1"
+                                        value={activeFormDetails.name}
+                                        onChange={(e) =>
+                                            setActiveFormDetails(prev => ({
+                                                ...prev,
+                                                name: e.target.value
+                                            }))
+                                        }
+                                    />
+                                </label>
+                                <label className='flex items-center justify-between'>
+                                    Image Name
+                                    <input
+                                        type="text"
+                                        className="border p-1 m-1"
+                                        value={activeFormDetails.imageName}
+                                        onChange={(e) =>
+                                            setActiveFormDetails(prev => ({
+                                                ...prev,
+                                                imageName: e.target.value
+                                            }))
+                                        }
+                                    />
+                                </label>
+                                <br />
+                                <button
+                                    className="bg-blue-500 text-white p-2 mt-2"
+                                >
+                                    Save
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
 
-export default FabricDropDown
+export default FabricDropDown;

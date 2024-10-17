@@ -10,3 +10,6 @@ This code has problem with changing the custom corner cursor when hovering, need
 
 ### My forth commit
 This code has introduced form, but the form is not opening for the different image object.
+
+### Fixed
+Fixed different form opening for different object images, also fixed the position of form for different object.
