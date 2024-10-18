@@ -7,6 +7,10 @@ import cancel from '../images/icons8-cancel-30.png';
 import edit from '../images/icons8-edit-32.png';
 import dot from '../images/icons8-dot-15.png';
 import { FaWindowClose } from "react-icons/fa";
+import json from '../my.json';
+import DesktopForm from './DesktopForm';
+import WorkStationForm from './WorkStationForm';
+import InternetForm from './InternetForm';
 
 let objID = 0;
 
@@ -16,6 +20,7 @@ const FabricDropDown = () => {
     const [activeFormDetails, setActiveFormDetails] = useState(null);
     const [formOpen, setFormOpen] = useState(true);
     const [forms, setForms] = useState([]);
+    const [activeFormName, setActiveFormName] = useState('');
 
     const setCornerCursor = () => {
         if (editor) {
@@ -80,6 +85,11 @@ const FabricDropDown = () => {
             editor?.canvas.add(img);
             img.setControlsVisibility(HideControls);
         });
+        
+        // editor?.canvas.on('mouse:down', function (e) {
+        //     e.e.preventDefault();  
+        //     // console.log(e.target.name);
+        // });
 
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
             var controls = ['tr', 'br', 'bl'];
@@ -150,6 +160,8 @@ const FabricDropDown = () => {
             const target = transform.target;
             const action = transform.action;
 
+            setFormOpen(false);
+
             switch (action) {
                 case 'edit':
                     break;
@@ -158,20 +170,6 @@ const FabricDropDown = () => {
                 case 'connect':
                     break;
                 default:
-
-                    // calculations
-                    const width = target.width * target.scaleX;
-                    const height = target.height * target.scaleY;
-
-                    // target.aCoords.tl.x = target.left;
-                    // target.aCoords.tl.y = target.top;
-                    // target.aCoords.tr.x = target.left + width;
-                    // target.aCoords.tr.y = target.top;
-                    // target.aCoords.bl.x = target.left;
-                    // target.aCoords.bl.y = target.top - height;
-                    // target.aCoords.br.x = target.left + width;
-                    // target.aCoords.br.y = target.top - height;
-
                     target.set({
                         left: x,
                         top: y
@@ -189,6 +187,7 @@ const FabricDropDown = () => {
 
     function handleOpenForm(x, y, target) {
         setFormOpen(true);
+        setActiveFormName(target.name)
         setActiveFormDetails({
             id: target.id,
             coords: { x, y },
@@ -215,6 +214,8 @@ const FabricDropDown = () => {
     }
 
     function handleCreateConnector(e, x, y, target) {
+        if (target.hasConnector) return;
+        target.hasConnector = true;
         let tempCurve = null;
         let tempArrow = null;
         const blCoords = target.oCoords.bl;
@@ -284,9 +285,46 @@ const FabricDropDown = () => {
         });
     }
 
+    const handleExport = () => {
+        const jsn = JSON.stringify(editor?.canvas.toJSON());
+        console.log(jsn);
+
+        const blob = new Blob([jsn], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'my.json';
+        a.click();
+
+        URL.revokeObjectURL(url);
+    };
+
     useEffect(() => {
         setCornerCursor();
     }, [editor]);
+    
+
+    // useEffect(() => {
+    //     if (editor?.canvas) {
+    //         editor.canvas.clear();
+
+    //         editor.canvas.loadFromJSON(json, () => {
+    //             editor.canvas.getObjects().forEach(obj => {
+    //                 if (obj.type === 'path' || obj.type === 'triangle') {
+    //                     obj.set({
+    //                         selectable: false,
+    //                         evented: false
+    //                     });
+    //                 }
+    //             });
+
+    //             editor.canvas.renderAll();
+    //         }, (o, object) => {
+    //             console.log('Object loaded:', o, object);
+    //         });
+    //     }
+    // }, [editor?.canvas]);    
 
     return (
         <>
@@ -330,7 +368,7 @@ const FabricDropDown = () => {
                         />
 
                         {/* Form */}
-                        {activeFormDetails && formOpen && (
+                        {/* {activeFormDetails && formOpen && (
                             <div
                                 className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
                                 style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}
@@ -375,9 +413,33 @@ const FabricDropDown = () => {
                                     Save
                                 </button>
                             </div>
+                        )} */}
+                        {activeFormName === 'Desktop' && activeFormDetails && formOpen && (
+                            <div
+                                className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
+                                style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}>
+                                    <DesktopForm />
+                                </div>
+                        )}
+                        {activeFormName === 'Internet' && activeFormDetails && formOpen && (
+                            <div
+                                className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
+                                style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}>
+                                    <InternetForm />
+                                </div>
+                        )}
+                        {activeFormName === 'Workstation' && activeFormDetails && formOpen && (
+                            <div
+                                className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
+                                style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}>
+                                    <WorkStationForm />
+                                </div>
                         )}
                     </div>
                 </div>
+            </div>
+            <div className='p-3'>
+                <button className='bg-green-600 text-white p-3 rounded font-bold' onClick={handleExport}>Export to JSON</button>
             </div>
         </>
     );
