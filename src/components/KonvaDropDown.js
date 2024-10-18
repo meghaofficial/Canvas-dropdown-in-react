@@ -65,6 +65,16 @@ const KonvaDropDown = () => {
         fname: "", lname: ""
     });
     const [activeImageId, setActiveImageId] = useState(null);
+    let imgName = "";
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        stageRef.current.setPointersPositions(e);
+        const pos = stageRef.current.getPointerPosition();
+        setImages((prevImages) =>
+            prevImages.concat([{ ...pos, src: dragUrl.current, id: `image-${Date.now()}` }])
+        );
+    }
 
     const onRightClick = (image, xPos, yPos) => {
         if (!openForm) {
@@ -95,6 +105,17 @@ const KonvaDropDown = () => {
     };
 
     const handleImageClick = (clickedImage, x, y) => {
+        switch (clickedImage.src) {
+            case desktop:
+                imgName = "Desktop";
+                break;
+            case internet:
+                imgName = "Internet";
+                break;
+            case workstation:
+                imgName = "Workstation";
+                break;
+        }
         const currentImage = { ...clickedImage, x, y };  // Use updated position
         if (!firstSelected) {
             setFirstSelected(currentImage);  // Set current image with updated position
@@ -160,14 +181,7 @@ const KonvaDropDown = () => {
                 {/* Right canvas */}
                 <div
                     className="h-[100%] w-[85%] border border-gray-400"
-                    onDrop={(e) => {
-                        e.preventDefault();
-                        stageRef.current.setPointersPositions(e);
-                        const pos = stageRef.current.getPointerPosition();
-                        setImages((prevImages) =>
-                            prevImages.concat([{ ...pos, src: dragUrl.current, id: `image-${Date.now()}` }])
-                        );
-                    }}
+                    onDrop={(e) => handleDrop(e)}
                     onDragOver={(e) => e.preventDefault()}
                 >
                     <Stage
@@ -179,7 +193,7 @@ const KonvaDropDown = () => {
                             {connectors.map((connector, index) => {
                                 // Calculate the midpoint of the curve
                                 const controlX = (connector.start.x + connector.end.x) / 2;
-                                const controlY = (connector.start.y + connector.end.y) / 2 - 100; 
+                                const controlY = (connector.start.y + connector.end.y) / 2 - 100;
                                 const midX = (connector.start.x + controlX + connector.end.x) / 3;
                                 const midY = (connector.start.y + controlY + connector.end.y) / 3;
 
@@ -189,9 +203,9 @@ const KonvaDropDown = () => {
                                         <Line
                                             key={index}
                                             points={[
-                                                connector.start.x + 50, connector.start.y + 50, 
-                                                controlX, controlY, 
-                                                connector.end.x + 50, connector.end.y + 50, 
+                                                connector.start.x + 50, connector.start.y + 50,
+                                                controlX, controlY,
+                                                connector.end.x + 50, connector.end.y + 50,
                                             ]}
                                             stroke="black"
                                             strokeWidth={2}
