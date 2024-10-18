@@ -31,3 +31,6 @@ Populating different forms according to the image object. Different forms should
 
 ##### Start
 Going to start working on moving connector with moving object.
+
+##### Konva
+Now tring to make it with React-Konva, implement all those functionalities.

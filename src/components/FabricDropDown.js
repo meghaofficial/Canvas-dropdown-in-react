@@ -284,6 +284,10 @@ const FabricDropDown = () => {
                 });
             }
         });
+
+        editor?.canvas.on('object:moving', function (options){
+            console.log(options);
+        });
     }
 
     const handleExport = () => {
