@@ -93,6 +93,7 @@ const FabricDropDown = () => {
 
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
             var controls = ['tr', 'br', 'bl'];
+            const cornerSize = this.cornerSize;
 
             controls.forEach((control) => {
                 if (this.isControlVisible(control)) {
@@ -117,11 +118,8 @@ const FabricDropDown = () => {
                     }
 
                     SelectedIconImage.onload = function () {
+                        ctx.clearRect(left, top, cornerSize, cornerSize);
                         ctx.drawImage(SelectedIconImage, left, top, size, size);
-                    };
-
-                    SelectedIconImage.onerror = function () {
-                        console.error('Failed to load control image for', control);
                     };
                 }
             });
@@ -131,7 +129,7 @@ const FabricDropDown = () => {
 
         fabric.Canvas.prototype._getActionFromCorner = function (alreadySelected, corner, e, target) {
             if (!corner) {
-                return 'custom_drag';
+                return 'drag';
             }
             var action = 'drag';
             if (corner) {
@@ -150,6 +148,7 @@ const FabricDropDown = () => {
                         break;
                     default:
                         action = 'drag';
+                        break;
                 }
                 return action;
             }
@@ -275,7 +274,9 @@ const FabricDropDown = () => {
                     else {
                         if (tempCurve && tempArrow) {
                             editor?.canvas.add(tempCurve);
+                            tempCurve.sendToBack();
                             editor?.canvas.add(tempArrow);
+                            tempArrow.sendToBack();
                             editor?.canvas.renderAll();
                         }
                         editor?.canvas.off('mouse:up');

@@ -28,3 +28,6 @@ Cancel, Edit and Connector icons were not moving with the image object but now i
 
 ##### Different forms
 Populating different forms according to the image object. Different forms should open for different image object.
+
+##### Start
+Going to start working on moving connector with moving object.
