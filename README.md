@@ -34,3 +34,6 @@ Going to start working on moving connector with moving object.
 
 ##### Konva
 Now tring to make it with React-Konva, implement all those functionalities.
+
+##### Fabric
+Creating finally with Fabric js and resume it for now, going to create UI.

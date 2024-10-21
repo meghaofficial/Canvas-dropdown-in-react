@@ -21,6 +21,11 @@ const FabricDropDown = () => {
     const [formOpen, setFormOpen] = useState(true);
     const [forms, setForms] = useState([]);
     const [activeFormName, setActiveFormName] = useState('');
+    const [startObj, setStartObj] = useState(null);
+    const [endObj, setEndObj] = useState(null);
+    const [connectors, setConnectors] = useState([]);
+    let sObj = null;
+    let eObj = null;
 
     const setCornerCursor = () => {
         if (editor) {
@@ -173,6 +178,14 @@ const FabricDropDown = () => {
                         left: x,
                         top: y
                     });
+                    // console.log(transform.target.name);
+                    if (sObj?.name === transform.target.name){
+                        console.log("moving start obj")
+                    }
+                    if (eObj?.name === transform.target.name){
+                        console.log("moving end obj")
+                    }
+                    updateConnectorPosition(e, transform, pointer);
                     target.setCoords();
                     this.renderAll();
                     this.fire('moving', target, e);
@@ -219,8 +232,10 @@ const FabricDropDown = () => {
         let tempArrow = null;
         const blCoords = target.oCoords.bl;
 
-        const startX = blCoords.x;
-        const startY = blCoords.y;
+        const startX = sObj === null ? blCoords.x : sObj.left;
+        const startY = sObj === null ? blCoords.y : sObj.top;
+        setStartObj(target);
+        sObj = target;
 
         editor?.canvas.on('mouse:down', function (options) {
             if (options.target === target && options.target.__corner === 'bl') {
@@ -264,7 +279,13 @@ const FabricDropDown = () => {
                 // Mouse up to stop drawing the curve
                 editor?.canvas.on('mouse:up', function (options) {
                     editor?.canvas.off('mouse:move');
-
+                    
+                    setEndObj(options.currentTarget);
+                    eObj = options.currentTarget;
+                    if (options.currentTarget) {
+                        setConnectors(prevConnectors => [...prevConnectors, { connectorID: connectors.length + 1, startObj: target, endObj: options.currentTarget, tempCurve, tempArrow }]);
+                    }
+                    
                     if (!options.currentTarget) {
                         editor?.canvas.remove(tempCurve);
                         editor?.canvas.remove(tempArrow);
@@ -284,10 +305,16 @@ const FabricDropDown = () => {
                 });
             }
         });
-
-        editor?.canvas.on('object:moving', function (options){
-            console.log(options);
-        });
+    }
+    // useEffect(() => {
+    //     connectors.forEach(conn => {
+    //         console.log(conn.startObj.left)
+    //     })
+    // }, [connectors])
+    
+    function updateConnectorPosition(e, transform, pointer) {
+        // console.log(pointer);
+        return pointer;
     }
 
     const handleExport = () => {
