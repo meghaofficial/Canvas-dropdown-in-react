@@ -37,6 +37,31 @@ const FabricUI = () => {
     const canvas = editor?.canvas;
     const [toggleOn, setToggleOn] = useState(false);
 
+    const deleteActiveObject = () => {
+        if (canvas) {
+            if (
+                canvas.getActiveObject() !== undefined &&
+                canvas.getActiveObject() !== null
+            ) {
+                const activeObject = canvas.getActiveObject();
+                canvas.remove(activeObject);
+                canvas.renderAll();
+            }
+        }
+    };
+
+    var img1 = document.createElement("img");
+    img1.src = deleteIcon;
+
+    function renderIcon(ctx, left, top, fabricObject) {
+        var size = this.cornerSize;
+        ctx.save();
+        ctx.translate(left, top);
+        ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+        ctx.drawImage(img1, -size / 2, -size / 2, size, size);
+        ctx.restore();
+    }
+
     useEffect(() => {
         if (canvas) {
             canvas.setBackgroundImage(
@@ -48,53 +73,29 @@ const FabricUI = () => {
                 }
             );
 
-            const deleteActiveObject = () => {
-                if (canvas) {
-                    if (
-                        canvas.getActiveObject() !== undefined &&
-                        canvas.getActiveObject() !== null
-                    ) {
-                        const activeObject = canvas.getActiveObject();
-                        canvas.remove(activeObject);
-                        canvas.renderAll();
-                    }
-                }
-            };
+            // canvas.on('mouse:over', function (e) {
+            //     if (e.target) {
+            //         e.target.controls.deleteControl = new fabric.Control({
+            //             x: 0.5,
+            //             y: -0.5,
+            //             offsetY: 0,
+            //             cursorStyle: "pointer",
+            //             mouseDownHandler: deleteActiveObject,
+            //             render: renderIcon,
+            //             cornerSize: 24,
+            //         });
+            //         canvas.renderAll();
+            //     }
+            // });
 
-            var img1 = document.createElement("img");
-            img1.src = deleteIcon;
+            // canvas.on('mouse:out', function (e) {
+            //     if (e.target) {
+            //         delete e.target.controls.deleteControl;
+            //         canvas.renderAll();
+            //     }
+            // });
 
-            fabric.Object.prototype.controls.deleteControl = new fabric.Control({
-                x: 0.5,
-                y: -0.5,
-                offsetY: 0,
-                cursorStyle: "pointer",
-                mouseUpHandler: deleteActiveObject,
-                render: renderIcon,
-                cornerSize: 24,
-            });
-
-            function renderIcon(ctx, left, top, fabricObject) {
-                var size = this.cornerSize;
-                ctx.save();
-                ctx.translate(left, top);
-                ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
-                ctx.drawImage(img1, -size / 2, -size / 2, size, size);
-                ctx.restore();
-            }
-
-            fabric.Object.prototype.controls.leftIcon = new fabric.Control({
-                x: 1.5,
-                y: -0.5,
-                offsetY: 70,
-                offsetX: -100,
-                cursorStyle: "pointer",
-                mouseUpHandler: (event, target) => {
-                    handleDoubleClick(event, target);
-                },
-                cornerSize: 14,
-            });
-            editor?.canvas.renderAll();
+            canvas.renderAll();
 
         }
     }, [editor]);
@@ -116,13 +117,38 @@ const FabricUI = () => {
 
         const imgSrc = e.dataTransfer.getData('imgSrc');
 
+        let imgName = '';
+
+        switch(imgSrc){
+            case Networkwithpadding:
+                imgName = "Network";
+                break;
+            case Serverwithpadding:
+                imgName = "Server";
+                break;
+            case Workstationwithpadding: 
+                imgName = "Workstation";
+                break;
+            case Routerwithpadding:
+                imgName = "Router";
+                break;
+            case Laptopwithpadding:
+                imgName = "Laptop";
+                break;
+            case Mobilewithpadding:
+                imgName = "Mobile";
+                break;
+            default:
+                imgName = "No image";
+        }
+
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
-                name: "laptop",
+                name: imgName,
                 left: e.clientX - 50,
                 top: e.clientY - 180,
-                scaleX: 1.2,
-                scaleY: 1.2,
+                scaleX: 1.5,
+                scaleY: 1.5,
                 padding: 5,
                 cornerSize: 20,
                 cornerColor: 'transparent',
@@ -131,58 +157,44 @@ const FabricUI = () => {
                 selectable: true,
             });
 
-            fabric.Image.fromURL(cancel, (c_img) => {
-                c_img.set({
-                    left: (img.left - 12) + (img.width * img.scaleX),
-                    top: img.top - 8,
-                    scaleX: 1,
-                    scaleY: 1,
-                    selectable: false,
-                    evented: true
-                });
+            canvas.add(img);
+            img.setControlsVisibility(HideControls);
+            canvas.setActiveObject(img);
 
-                // const group = new fabric.Group([img, c_img], {
-                //     left: img.left,
-                //     top: img.top,
-                //     hasControls: false,
-                //     selectable: true,
-                //     borderColor: 'transparent',
-                //     subTargetCheck: true
-                // });
-
-                // editor?.canvas.add(group);
-                // // editor?.canvas.renderAll();
-
-                // c_img.on('mousedown', (e) => {
-
-
-                //     editor?.canvas.remove(group);
-                //     editor?.canvas.renderAll();
-                // })
+            img.controls.deleteControl = new fabric.Control({
+                x: 0.5,
+                y: -0.5,
+                offsetY: 0,
+                cursorStyle: "pointer",
+                mouseDownHandler: deleteActiveObject,
+                render: renderIcon,
+                cornerSize: 24,
             });
 
-            editor?.canvas.add(img);
-            img.setControlsVisibility(HideControls);
-
+            img.on('mouseover', (e) => {
+                if (e.target) {
+                    e.target.controls.deleteControl = new fabric.Control({
+                        x: 0.5,
+                        y: -0.5,
+                        offsetY: 0,
+                        cursorStyle: "pointer",
+                        mouseDownHandler: deleteActiveObject,
+                        render: renderIcon,
+                        cornerSize: 24,
+                    });
+                    canvas.renderAll();
+                }
+            });
+            img.on('mouseout', (e) => {
+                if (e.target) {
+                    delete e.target.controls.deleteControl;
+                    canvas.renderAll();
+                }
+            });
         });
 
-        editor?.canvas.renderAll();
+        canvas.renderAll();
     }
-
-    // fabric.Canvas.prototype.getItemByName = function (name) {
-    //     var object = null,
-    //         objects = this.getObjects();
-    //     var len = this.size();
-    //     for (var i = 0; i < len; i++) {
-    //         if (objects[i].name === name) {
-    //             object = objects[i];
-    //             console.log(object);
-    //             break;
-    //         }
-    //     }
-
-    //     return object;
-    // };
 
     return (
         // Container
