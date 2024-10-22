@@ -31,11 +31,15 @@ import reviewsubmitinactive from '../images/Review&Submit_inactive state 1.png';
 var deleteIcon =
     "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
 
+const STATE_IDLE = 'idle';
+const STATE_PANNING = 'panning';
+
 const FabricUI = () => {
 
     const { editor, onReady } = useFabricJSEditor();
     const canvas = editor?.canvas;
     const [toggleOn, setToggleOn] = useState(false);
+    const [enablePanning, setEnablePanning] = useState(false);
 
     const deleteActiveObject = () => {
         if (canvas) {
@@ -73,32 +77,97 @@ const FabricUI = () => {
                 }
             );
 
-            // canvas.on('mouse:over', function (e) {
-            //     if (e.target) {
-            //         e.target.controls.deleteControl = new fabric.Control({
-            //             x: 0.5,
-            //             y: -0.5,
-            //             offsetY: 0,
-            //             cursorStyle: "pointer",
-            //             mouseDownHandler: deleteActiveObject,
-            //             render: renderIcon,
-            //             cornerSize: 24,
-            //         });
-            //         canvas.renderAll();
-            //     }
-            // });
-
-            // canvas.on('mouse:out', function (e) {
-            //     if (e.target) {
-            //         delete e.target.controls.deleteControl;
-            //         canvas.renderAll();
-            //     }
-            // });
+            canvas.on('mouse:wheel', function (opt) {
+                var delta = opt.e.deltaY;
+                var zoom = canvas.getZoom();
+                zoom *= 0.999 ** delta;
+                if (zoom > 20) zoom = 20;
+                if (zoom < 0.01) zoom = 0.01;
+                canvas.setZoom(zoom);
+                opt.e.preventDefault();
+                opt.e.stopPropagation();
+            })
 
             canvas.renderAll();
 
         }
     }, [editor]);
+
+    useEffect(() => {
+        let lastClientX;
+        let lastClientY;
+    
+        fabric.Canvas.prototype.panState = STATE_IDLE;
+    
+        fabric.Canvas.prototype.panMouseMoveHandler = function (e) {
+            if (this.panState === STATE_PANNING && e && e.e) {
+                let deltaX = 0;
+                let deltaY = 0;
+    
+                if (lastClientX) {
+                    deltaX = e.e.clientX - lastClientX;
+                }
+                if (lastClientY) {
+                    deltaY = e.e.clientY - lastClientY;
+                }
+    
+                lastClientX = e.e.clientX;
+                lastClientY = e.e.clientY;
+    
+                let delta = new fabric.Point(deltaX, deltaY);
+                this.relativePan(delta);
+            }
+        };
+    
+        fabric.Canvas.prototype.panMouseUpHandler = function (e) {
+            this.panState = STATE_IDLE;
+        };
+    
+        fabric.Canvas.prototype.panMouseDownHandler = function (e) {
+            this.panState = STATE_PANNING;
+            lastClientX = e.e.clientX;
+            lastClientY = e.e.clientY;
+        };
+    
+        fabric.Canvas.prototype.toggleDragMode = function (dragMode) {
+            if (dragMode) {
+                this.discardActiveObject();
+                this.defaultCursor = 'move';
+                this.forEachObject(function (object) {
+                    object.prevEvented = object.evented;
+                    object.prevSelectable = object.selectable;
+                    object.evented = false;
+                    object.selectable = false;
+                });
+                this.selection = false;
+                this.on('mouse:up', this.panMouseUpHandler);
+                this.on('mouse:down', this.panMouseDownHandler);
+                this.on('mouse:move', this.panMouseMoveHandler);
+            } else {
+                this.forEachObject(function (object) {
+                    object.evented = object.prevEvented !== undefined ? object.prevEvented : object.evented;
+                    object.selectable = object.prevSelectable !== undefined ? object.prevSelectable : object.selectable;
+                });
+                this.defaultCursor = 'default';
+                this.off('mouse:up', this.panMouseUpHandler);
+                this.off('mouse:down', this.panMouseDownHandler);
+                this.off('mouse:move', this.panMouseMoveHandler);
+                this.selection = true;
+            }
+        };
+    
+        canvas?.on('mouse:dblclick', () => {
+            setEnablePanning((prevState) => {
+                canvas.toggleDragMode(!prevState);
+                return !prevState;
+            });
+        });
+    
+        return () => {
+            canvas?.off('mouse:dblclick');
+        };
+    }, [canvas]);
+    
 
     const HideControls = {
         'tl': false,
@@ -119,14 +188,14 @@ const FabricUI = () => {
 
         let imgName = '';
 
-        switch(imgSrc){
+        switch (imgSrc) {
             case Networkwithpadding:
                 imgName = "Network";
                 break;
             case Serverwithpadding:
                 imgName = "Server";
                 break;
-            case Workstationwithpadding: 
+            case Workstationwithpadding:
                 imgName = "Workstation";
                 break;
             case Routerwithpadding:
