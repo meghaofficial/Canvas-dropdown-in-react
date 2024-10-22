@@ -37,3 +37,6 @@ Now tring to make it with React-Konva, implement all those functionalities.
 
 ##### Fabric
 Creating finally with Fabric js and resume it for now, going to create UI.
+
+##### UI
+Basic fabric image with UI is done in FabricUI.js file

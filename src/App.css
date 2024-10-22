@@ -1,3 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+    margin: 0;
+    padding: 0;
+}
+body{
+    background: #09182f;
+}
+#rotate_div{
+    transform: rotate(45deg);
+    position: relative;
+    left: -55px;
+}
+/* .arrowBox{
+    position: relative;
+    width:220px;
+    background: #14243e;
+    height:40px;
+    line-height: 40px;
+    margin-bottom:30px; 
+    text-align:center;
+    color:#fff;
+  }
+.arrow-right:after{
+    content: "";
+    position: absolute;
+    right: -20px;
+    top: 0;
+    height: 100%;
+    border-top: 20px solid transparent;
+    border-bottom: 20px solid transparent;
+    border-left: 20px solid #14243e;
+} */
+/* #404d62 */
+
+.noselect {
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Old versions of Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}
