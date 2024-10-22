@@ -22,24 +22,80 @@ import Mobilewithpadding from '../images/Mobilewithpadding.png';
 import dottedBg from '../images/dotted bg 1.png';
 
 import cancel from '../images/icons8-cancel-20.png';
-import edit from '../images/icons8-edit-32.png';
 import dot from '../images/icons8-dot-15.png';
+
+import setupinactive from '../images/Setup_inactive state 1.png';
+import configureinactive from '../images/Configure_inactive state 1.png';
+import reviewsubmitinactive from '../images/Review&Submit_inactive state 1.png';
+
+var deleteIcon =
+    "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
 
 const FabricUI = () => {
 
     const { editor, onReady } = useFabricJSEditor();
+    const canvas = editor?.canvas;
     const [toggleOn, setToggleOn] = useState(false);
 
     useEffect(() => {
-        if (editor?.canvas) {
-            editor.canvas.setBackgroundImage(
+        if (canvas) {
+            canvas.setBackgroundImage(
                 dottedBg,
-                editor.canvas.renderAll.bind(editor.canvas),
+                canvas.renderAll.bind(canvas),
                 {
-                    scaleX: editor.canvas.width / 1000,
-                    scaleY: editor.canvas.height / 400,
+                    scaleX: canvas.width / 1000,
+                    scaleY: canvas.height / 400,
                 }
             );
+
+            const deleteActiveObject = () => {
+                if (canvas) {
+                    if (
+                        canvas.getActiveObject() !== undefined &&
+                        canvas.getActiveObject() !== null
+                    ) {
+                        const activeObject = canvas.getActiveObject();
+                        canvas.remove(activeObject);
+                        canvas.renderAll();
+                    }
+                }
+            };
+
+            var img1 = document.createElement("img");
+            img1.src = deleteIcon;
+
+            fabric.Object.prototype.controls.deleteControl = new fabric.Control({
+                x: 0.5,
+                y: -0.5,
+                offsetY: 0,
+                cursorStyle: "pointer",
+                mouseUpHandler: deleteActiveObject,
+                render: renderIcon,
+                cornerSize: 24,
+            });
+
+            function renderIcon(ctx, left, top, fabricObject) {
+                var size = this.cornerSize;
+                ctx.save();
+                ctx.translate(left, top);
+                ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+                ctx.drawImage(img1, -size / 2, -size / 2, size, size);
+                ctx.restore();
+            }
+
+            fabric.Object.prototype.controls.leftIcon = new fabric.Control({
+                x: 1.5,
+                y: -0.5,
+                offsetY: 70,
+                offsetX: -100,
+                cursorStyle: "pointer",
+                mouseUpHandler: (event, target) => {
+                    handleDoubleClick(event, target);
+                },
+                cornerSize: 14,
+            });
+            editor?.canvas.renderAll();
+
         }
     }, [editor]);
 
@@ -57,6 +113,7 @@ const FabricUI = () => {
 
     const handleDrop = (e) => {
         e.preventDefault();
+
         const imgSrc = e.dataTransfer.getData('imgSrc');
 
         fabric.Image.fromURL(imgSrc, (img) => {
@@ -64,94 +121,83 @@ const FabricUI = () => {
                 name: "laptop",
                 left: e.clientX - 50,
                 top: e.clientY - 180,
-                scaleX: 1,
-                scaleY: 1,
+                scaleX: 1.2,
+                scaleY: 1.2,
                 padding: 5,
                 cornerSize: 20,
                 cornerColor: 'transparent',
+                borderColor: 'transparent',
                 hasControls: true,
                 selectable: true,
             });
+
             fabric.Image.fromURL(cancel, (c_img) => {
                 c_img.set({
-                    left: 100,
-                    top: 100,
+                    left: (img.left - 12) + (img.width * img.scaleX),
+                    top: img.top - 8,
                     scaleX: 1,
-                    scaleY: 1
+                    scaleY: 1,
+                    selectable: false,
+                    evented: true
                 });
+
+                // const group = new fabric.Group([img, c_img], {
+                //     left: img.left,
+                //     top: img.top,
+                //     hasControls: false,
+                //     selectable: true,
+                //     borderColor: 'transparent',
+                //     subTargetCheck: true
+                // });
+
+                // editor?.canvas.add(group);
+                // // editor?.canvas.renderAll();
+
+                // c_img.on('mousedown', (e) => {
+
+
+                //     editor?.canvas.remove(group);
+                //     editor?.canvas.renderAll();
+                // })
             });
-            editor?.canvas.add(img); 
+
+            editor?.canvas.add(img);
             img.setControlsVisibility(HideControls);
+
         });
-
-        fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
-            var controls = ['tr'];
-            const cornerSize = this.cornerSize;
-            const padding = 5;
-
-            controls.forEach((control) => {
-                if (this.isControlVisible(control)) {
-                    var size = this.cornerSize;
-                    var left = this.oCoords[control].x - size / 2 - 2;
-                    var top = this.oCoords[control].y - size / 2 - 4;
-                    var SelectedIconImage = new Image();
-                    SelectedIconImage.src = cancel;
-
-                    switch (control) {
-                        case 'tl':
-                            SelectedIconImage.src = null;
-                            break;
-                        case 'tr':
-                            SelectedIconImage.src = cancel;
-                            break;
-                        case 'bl':
-                            SelectedIconImage.src = dot;
-                            break;
-                        case 'br':
-                            SelectedIconImage.src = edit;
-                            break;
-                    }
-
-                    SelectedIconImage.onload = function () {
-                        // ctx.clearRect(left, top, cornerSize, cornerSize);
-                        // ctx.drawImage(SelectedIconImage, left, top, size, size);
-                        // ctx.clearRect(left + padding, top + padding, cornerSize, cornerSize);
-                        ctx.drawImage(SelectedIconImage, left + padding, top + padding, cornerSize, cornerSize);
-                    };
-                }
-            });
-        };
 
         editor?.canvas.renderAll();
     }
+
+    // fabric.Canvas.prototype.getItemByName = function (name) {
+    //     var object = null,
+    //         objects = this.getObjects();
+    //     var len = this.size();
+    //     for (var i = 0; i < len; i++) {
+    //         if (objects[i].name === name) {
+    //             object = objects[i];
+    //             console.log(object);
+    //             break;
+    //         }
+    //     }
+
+    //     return object;
+    // };
 
     return (
         // Container
         <div>
 
             {/* Upper 3 options */}
-            <div className='text-white flex justify-between p-2 items-center'>
-                <div className='flex items-center justify-center bg-[#14243e] relative w-[30%] h-[40px] py-6'
-                    style={{
-                        borderLeft: '1.8px solid #404d62',
-                        borderTop: '1.8px solid #404d62',
-                        borderBottom: '1.8px solid #404d62',
-                        borderTopLeftRadius: '5px',
-                        borderBottomLeftRadius: '5px'
-                    }}>
-                    <p>Setup</p>
+            <div className='text-white flex justify-around p-2 items-center'>
+                <div className='flex items-center justify-center relative w-[33%] h-[40px] py-6'>
+                    <img src={setupinactive} alt="setupinactive" />
                 </div>
-                {/* <div className='h-[42px] w-[42px] bg-[#14243e]' id='rotate_div' 
-                style={{
-                    borderRight: '1.8px solid #404d62',
-                    borderTop: '1.8px solid #404d62'
-                }}></div> */}
-
-                <div className='flex items-center justify-center bg-[#14243e] w-[30%] h-[40px] mt-2 py-6'>
-                    <p>Configure</p>
+                <div className='flex items-center justify-center w-[33%] h-[40px] mt-2 py-6'>
+                    <img src={configureinactive} alt="configureinactive" />
                 </div>
-                <div className='flex items-center justify-center bg-[#14243e] w-[30%] h-[40px] mt-2 py-6'>
-                    <p>Review & Submit</p>
+                <div className='flex items-center justify-center w-[33%] h-[40px] mt-2 py-6'>
+                    <img src={reviewsubmitinactive} alt="reviewsubmitinactive" />
                 </div>
             </div>
 
@@ -174,55 +220,55 @@ const FabricUI = () => {
 
                         {/* Network */}
                         <div className='flex flex-col justify-center items-center cursor-pointer' onClick={() => console.log("clicked")}>
-                            <img src={network} alt="network" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Networkwithpadding)} />
-                            <p className='noselect'>Network</p>
+                            <img src={network} alt="network" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Networkwithpadding)} width="30px" />
+                            <p className='noselect text-xs'>Network</p>
                         </div>
 
                         <div className='border-2 border-[#37527e] h-10 rounded'></div>
 
                         {/* Server */}
                         <div className='flex flex-col justify-center items-center cursor-pointer'>
-                            <img src={server} alt="server" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Serverwithpadding)} />
-                            <p className='noselect'>Server</p>
+                            <img src={server} alt="server" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Serverwithpadding)} width="30px" />
+                            <p className='noselect text-xs'>Server</p>
                         </div>
 
                         <div className='border-2 border-[#37527e] h-10 rounded'></div>
 
                         {/* Workstation */}
                         <div className='flex flex-col justify-center items-center cursor-pointer'>
-                            <img src={workstation} alt="workstation" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Workstationwithpadding)} />
-                            <p className='noselect'>Workstation</p>
+                            <img src={workstation} alt="workstation" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Workstationwithpadding)} width="30px" />
+                            <p className='noselect text-xs'>Workstation</p>
                         </div>
 
                         <div className='border-2 border-[#37527e] h-10 rounded'></div>
 
                         {/* Router */}
                         <div className='flex flex-col justify-center items-center cursor-pointer'>
-                            <img src={router} alt="router" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Routerwithpadding)} />
-                            <p className='noselect'>Router</p>
+                            <img src={router} alt="router" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Routerwithpadding)} width="30px" />
+                            <p className='noselect text-xs'>Router</p>
                         </div>
 
                         <div className='border-2 border-[#37527e] h-10 rounded'></div>
 
                         {/* Laptop */}
                         <div className='flex flex-col justify-center items-center cursor-pointer'>
-                            <img src={laptop} alt="laptop" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Laptopwithpadding)} />
-                            <p className='noselect'>Laptop</p>
+                            <img src={laptop} alt="laptop" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Laptopwithpadding)} width="30px" />
+                            <p className='noselect text-xs'>Laptop</p>
                         </div>
 
                         <div className='border-2 border-[#37527e] h-10 rounded'></div>
 
                         {/* Mobile */}
                         <div className='flex flex-col justify-center items-center cursor-pointer'>
-                            <img src={mobile} alt="mobile" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Mobilewithpadding)} />
-                            <p className='noselect'>Mobile</p>
+                            <img src={mobile} alt="mobile" onDragStart={(e) => e.dataTransfer.setData('imgSrc', Mobilewithpadding)} width="20px" />
+                            <p className='noselect text-xs'>Mobile</p>
                         </div>
                     </div>
 
                     {/* validate and next buttons */}
                     <div className='w-[20%] flex justify-evenly items-center m-2'>
-                        <button className='bg-[#9fef04] text-black px-6 py-3'>Validate</button>
-                        <button className='bg-[#193258] flex items-center rounded py-2 px-4'>Next <IoIosArrowForward className='bg-[#193258]' /> </button>
+                        <button className='bg-[#9fef04] text-black px-6 py-3 rounded-sm'>Validate</button>
+                        <button className='bg-[#193258] hover:bg-[#9fef04] hover:text-black flex items-center rounded-sm py-2 px-4'>Next <IoIosArrowForward className='bg-[#193258] hover:bg-[#9fef04] hover:text-black' /> </button>
                     </div>
 
                 </div>

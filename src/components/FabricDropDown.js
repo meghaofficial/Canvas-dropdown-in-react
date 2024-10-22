@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react'
-import desktop from '../images/desktop.png';
-import internet from '../images/internet.png';
-import workstation from '../images/workstation.png';
-import cancel from '../images/icons8-cancel-30.png';
-import edit from '../images/icons8-edit-32.png';
+import laptop from '../images/laptop(g).png';
+import network from '../images//network(g).png';
+import workstation from '../images/workstation(g).png';
+import cancel from '../images/icons8-cancel-20.png';
 import dot from '../images/icons8-dot-15.png';
 import { FaWindowClose } from "react-icons/fa";
 import json from '../my.json';
@@ -65,11 +64,11 @@ const FabricDropDown = () => {
         const imgSrc = e.dataTransfer.getData('imgSrc');
         let imgName = "";
         switch (imgSrc) {
-            case desktop:
-                imgName = "Desktop";
+            case laptop:
+                imgName = "Laptop";
                 break;
-            case internet:
-                imgName = "Internet";
+            case network:
+                imgName = "Network";
                 break;
             case workstation:
                 imgName = "Workstation";
@@ -97,7 +96,7 @@ const FabricDropDown = () => {
         // });
 
         fabric.Object.prototype.drawControls = function (ctx, styleOverride) {
-            var controls = ['tr', 'br', 'bl'];
+            var controls = ['tr', 'bl'];
             const cornerSize = this.cornerSize;
 
             controls.forEach((control) => {
@@ -118,7 +117,7 @@ const FabricDropDown = () => {
                             SelectedIconImage.src = dot;
                             break;
                         case 'br':
-                            SelectedIconImage.src = edit;
+                            SelectedIconImage.src = null;
                             break;
                     }
 
@@ -141,7 +140,7 @@ const FabricDropDown = () => {
                 switch (corner) {
                     case 'br':
                         action = 'edit';
-                        handleOpenForm(e.clientX, e.clientY, target);
+                        // handleOpenForm(e.clientX, e.clientY, target);
                         break;
                     case 'tr':
                         action = 'delete';
@@ -364,18 +363,18 @@ const FabricDropDown = () => {
                 <div className='flex flex-col items-center justify-evenly w-[15%] overflow-y-auto border border-gray-400 h-[100vh]'>
                     <div>
                         <img
-                            src={desktop}
-                            alt="desktop"
+                            src={laptop}
+                            alt="laptop"
                             width="100px"
-                            onDragStart={(e) => e.dataTransfer.setData('imgSrc', desktop)}
+                            onDragStart={(e) => e.dataTransfer.setData('imgSrc', laptop)}
                         />
                     </div>
                     <div>
                         <img
-                            src={internet}
-                            alt="internet"
+                            src={network}
+                            alt="network"
                             width="100px"
-                            onDragStart={(e) => e.dataTransfer.setData('imgSrc', internet)}
+                            onDragStart={(e) => e.dataTransfer.setData('imgSrc', network)}
                         />
                     </div>
                     <div>
@@ -446,14 +445,14 @@ const FabricDropDown = () => {
                                 </button>
                             </div>
                         )} */}
-                        {activeFormName === 'Desktop' && activeFormDetails && formOpen && (
+                        {activeFormName === 'Laptop' && activeFormDetails && formOpen && (
                             <div
                                 className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
                                 style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}>
                                     <DesktopForm />
                                 </div>
                         )}
-                        {activeFormName === 'Internet' && activeFormDetails && formOpen && (
+                        {activeFormName === 'Network' && activeFormDetails && formOpen && (
                             <div
                                 className="absolute bg-white p-4 shadow-lg border border-gray-300 flex flex-col"
                                 style={{ left: activeFormDetails.coords.x, top: activeFormDetails.coords.y }}>
