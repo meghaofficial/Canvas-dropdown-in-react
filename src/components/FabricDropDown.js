@@ -177,7 +177,6 @@ const FabricDropDown = () => {
                         left: x,
                         top: y
                     });
-                    // console.log(transform.target.name);
                     if (sObj?.name === transform.target.name){
                         console.log("moving start obj")
                     }

@@ -43,3 +43,6 @@ Basic fabric image with UI is done in FabricUI.js file
 
 ##### Delete
 Now delete functionality is working properly which was not working previously because I was grouping the image object and cancel image.
+
+##### Text
+Text below the image is successfully added

@@ -3,7 +3,6 @@ import { IoToggle } from "react-icons/io5";
 import { LiaToggleOffSolid } from "react-icons/lia";
 import { IoIosArrowForward } from "react-icons/io";
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
-// import dottedBg from '../images/dotted bg 1.png';
 
 import network from '../images/network(g).png';
 import server from '../images/server(g).png';
@@ -21,9 +20,6 @@ import Mobilewithpadding from '../images/Mobilewithpadding.png';
 
 import dottedBg from '../images/dotted bg 1.png';
 
-import cancel from '../images/icons8-cancel-20.png';
-import dot from '../images/icons8-dot-15.png';
-
 import setupinactive from '../images/Setup_inactive state 1.png';
 import configureinactive from '../images/Configure_inactive state 1.png';
 import reviewsubmitinactive from '../images/Review&Submit_inactive state 1.png';
@@ -33,13 +29,17 @@ var deleteIcon =
 
 const STATE_IDLE = 'idle';
 const STATE_PANNING = 'panning';
+let canvasID = 0;
+let objID = 0;
 
 const FabricUI = () => {
 
     const { editor, onReady } = useFabricJSEditor();
     const canvas = editor?.canvas;
     const [toggleOn, setToggleOn] = useState(false);
+    // const [canvasID, setCanvasID] = useState();
     const [enablePanning, setEnablePanning] = useState(false);
+    const [startConnector, setStartConnector] = useState(false);
 
     const deleteActiveObject = () => {
         if (canvas) {
@@ -66,6 +66,7 @@ const FabricUI = () => {
         ctx.restore();
     }
 
+    // Background & Mousewheel zoom-in zoom-out
     useEffect(() => {
         if (canvas) {
             canvas.setBackgroundImage(
@@ -78,14 +79,16 @@ const FabricUI = () => {
             );
 
             canvas.on('mouse:wheel', function (opt) {
-                var delta = opt.e.deltaY;
-                var zoom = canvas.getZoom();
-                zoom *= 0.999 ** delta;
-                if (zoom > 20) zoom = 20;
-                if (zoom < 0.01) zoom = 0.01;
-                canvas.setZoom(zoom);
-                opt.e.preventDefault();
-                opt.e.stopPropagation();
+                if (opt.e.ctrlKey) {
+                    var delta = opt.e.deltaY;
+                    var zoom = canvas.getZoom();
+                    zoom *= 0.999 ** delta;
+                    if (zoom > 20) zoom = 20;
+                    if (zoom < 0.01) zoom = 0.01;
+                    canvas.setZoom(zoom);
+                    opt.e.preventDefault();
+                    opt.e.stopPropagation();
+                }
             })
 
             canvas.renderAll();
@@ -93,42 +96,43 @@ const FabricUI = () => {
         }
     }, [editor]);
 
+    // Panning
     useEffect(() => {
         let lastClientX;
         let lastClientY;
-    
+
         fabric.Canvas.prototype.panState = STATE_IDLE;
-    
+
         fabric.Canvas.prototype.panMouseMoveHandler = function (e) {
             if (this.panState === STATE_PANNING && e && e.e) {
                 let deltaX = 0;
                 let deltaY = 0;
-    
+
                 if (lastClientX) {
                     deltaX = e.e.clientX - lastClientX;
                 }
                 if (lastClientY) {
                     deltaY = e.e.clientY - lastClientY;
                 }
-    
+
                 lastClientX = e.e.clientX;
                 lastClientY = e.e.clientY;
-    
+
                 let delta = new fabric.Point(deltaX, deltaY);
                 this.relativePan(delta);
             }
         };
-    
+
         fabric.Canvas.prototype.panMouseUpHandler = function (e) {
             this.panState = STATE_IDLE;
         };
-    
+
         fabric.Canvas.prototype.panMouseDownHandler = function (e) {
             this.panState = STATE_PANNING;
             lastClientX = e.e.clientX;
             lastClientY = e.e.clientY;
         };
-    
+
         fabric.Canvas.prototype.toggleDragMode = function (dragMode) {
             if (dragMode) {
                 this.discardActiveObject();
@@ -155,23 +159,22 @@ const FabricUI = () => {
                 this.selection = true;
             }
         };
-    
+
         canvas?.on('mouse:dblclick', () => {
             setEnablePanning((prevState) => {
                 canvas.toggleDragMode(!prevState);
                 return !prevState;
             });
         });
-    
+
         return () => {
             canvas?.off('mouse:dblclick');
         };
     }, [canvas]);
-    
 
     const HideControls = {
         'tl': false,
-        'tr': true,
+        'tr': false,
         'bl': false,
         'br': false,
         'ml': false,
@@ -185,9 +188,11 @@ const FabricUI = () => {
         e.preventDefault();
 
         const imgSrc = e.dataTransfer.getData('imgSrc');
-
+        if (canvas._objects.length === 0) {
+            canvasID++;
+        }
+        objID++;
         let imgName = '';
-
         switch (imgSrc) {
             case Networkwithpadding:
                 imgName = "Network";
@@ -213,6 +218,8 @@ const FabricUI = () => {
 
         fabric.Image.fromURL(imgSrc, (img) => {
             img.set({
+                canvasID: `Scenario-${canvasID}`,
+                objID: `${imgName}-${objID}`,
                 name: imgName,
                 left: e.clientX - 50,
                 top: e.clientY - 180,
@@ -230,16 +237,69 @@ const FabricUI = () => {
             img.setControlsVisibility(HideControls);
             canvas.setActiveObject(img);
 
+            const text = new fabric.Text(imgName, {
+                left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
+                top: img.top + img.height * img.scaleY + 10,
+                fill: 'white',
+                fontSize: 16,
+                fontFamily: 'Quicksand'
+            });
+            canvas.add(text);
+            const textWidth = text.getBoundingRect().width;
+            text.set({
+                left: text.left - textWidth / 2
+            });
+
+            img.on('moving', () => {
+                text.left = img.left + (img.width * img.scaleX)/2 - textWidth / 2;
+                text.top = img.top + img.height * img.scaleY + 10;
+                text.setCoords();
+                canvas.renderAll();
+            })
+
+            // Going to create connector
+            // img.on('mousedown', (e) => {
+            //     setStartConnector(prevState => {
+            //         // console.log(prevState)
+            //         return !prevState;
+            //     });
+            //     if (startConnector) {
+            //         img.set({
+            //             stroke: 'red',
+            //             strokeWidth: 3
+            //         });
+            //         canvas.renderAll();
+            //     }
+            // })
+            // img.on('mouseup', (e) => {
+            //     img.set({
+            //         stroke: 'transparent',
+            //         strokeWidth: 0
+            //     });
+            //     canvas.renderAll(); 
+            // })
+
             img.controls.deleteControl = new fabric.Control({
                 x: 0.5,
                 y: -0.5,
                 offsetY: 0,
                 cursorStyle: "pointer",
-                mouseDownHandler: deleteActiveObject,
+                mouseDownHandler: () => {
+                    if (canvas) {
+                        if (
+                            canvas.getActiveObject() !== undefined &&
+                            canvas.getActiveObject() !== null
+                        ) {
+                            const activeObject = canvas.getActiveObject();
+                            canvas.remove(activeObject);
+                            canvas.remove(text);
+                            canvas.renderAll();
+                        }
+                    }
+                },
                 render: renderIcon,
                 cornerSize: 24,
             });
-
             img.on('mouseover', (e) => {
                 if (e.target) {
                     e.target.controls.deleteControl = new fabric.Control({
@@ -247,7 +307,19 @@ const FabricUI = () => {
                         y: -0.5,
                         offsetY: 0,
                         cursorStyle: "pointer",
-                        mouseDownHandler: deleteActiveObject,
+                        mouseDownHandler: () => {
+                            if (canvas) {
+                                if (
+                                    canvas.getActiveObject() !== undefined &&
+                                    canvas.getActiveObject() !== null
+                                ) {
+                                    const activeObject = canvas.getActiveObject();
+                                    canvas.remove(activeObject);
+                                    canvas.remove(text);
+                                    canvas.renderAll();
+                                }
+                            }
+                        },
                         render: renderIcon,
                         cornerSize: 24,
                     });
