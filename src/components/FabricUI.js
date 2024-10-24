@@ -24,6 +24,10 @@ import setupinactive from '../images/Setup_inactive state 1.png';
 import configureinactive from '../images/Configure_inactive state 1.png';
 import reviewsubmitinactive from '../images/Review&Submit_inactive state 1.png';
 
+import Network from './Network.js';
+import Router from './Router.js';
+import EndDevice from './EndDevice.js';
+
 var deleteIcon =
     "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
 
@@ -33,26 +37,18 @@ let canvasID = 0;
 let objID = 0;
 
 const FabricUI = () => {
-
     const { editor, onReady } = useFabricJSEditor();
     const canvas = editor?.canvas;
     const [toggleOn, setToggleOn] = useState(false);
-    // const [canvasID, setCanvasID] = useState();
+    const [activeObjState, setActiveObjState] = useState(null);
     const [enablePanning, setEnablePanning] = useState(false);
-    const [startConnector, setStartConnector] = useState(false);
-
-    const deleteActiveObject = () => {
-        if (canvas) {
-            if (
-                canvas.getActiveObject() !== undefined &&
-                canvas.getActiveObject() !== null
-            ) {
-                const activeObject = canvas.getActiveObject();
-                canvas.remove(activeObject);
-                canvas.renderAll();
-            }
-        }
-    };
+    const [enableConnector, setEnableConnector] = useState(false);
+    const [startObj, setStartObj] = useState(null);
+    const [endObj, setEndObj] = useState(null)
+    const [openForm, setOpenForm] = useState(false);
+    const [activeFormDetails, setActiveFormDetails] = useState({
+        coords: { x: 0, y: 0 }, component: null
+    });
 
     var img1 = document.createElement("img");
     img1.src = deleteIcon;
@@ -65,6 +61,8 @@ const FabricUI = () => {
         ctx.drawImage(img1, -size / 2, -size / 2, size, size);
         ctx.restore();
     }
+
+    const handleCloseForm = () => setOpenForm(false);
 
     // Background & Mousewheel zoom-in zoom-out
     useEffect(() => {
@@ -193,6 +191,7 @@ const FabricUI = () => {
         }
         objID++;
         let imgName = '';
+        let activeObj = null;
         switch (imgSrc) {
             case Networkwithpadding:
                 imgName = "Network";
@@ -236,13 +235,17 @@ const FabricUI = () => {
             canvas.add(img);
             img.setControlsVisibility(HideControls);
             canvas.setActiveObject(img);
+            setActiveObjState(img);
 
+            // text
             const text = new fabric.Text(imgName, {
                 left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
                 top: img.top + img.height * img.scaleY + 10,
                 fill: 'white',
                 fontSize: 16,
-                fontFamily: 'Quicksand'
+                fontFamily: 'Quicksand',
+                selectable: false,
+                hasControls: false
             });
             canvas.add(text);
             const textWidth = text.getBoundingRect().width;
@@ -250,34 +253,160 @@ const FabricUI = () => {
                 left: text.left - textWidth / 2
             });
 
+            // // dot
+            // const dot = new fabric.Circle({
+            //     left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
+            //     top: (img.aCoords.bl.y + img.aCoords.br.y) / 2 - 1,
+            //     radius: 5,
+            //     backgroundColor: 'transparent',
+            //     fill: '#3592ee',
+            //     hasControls: false,
+            //     selectable: false
+            // });
+            // canvas.add(dot);
+            // dot.set({
+            //     left: dot.left - dot.radius
+            // });
+
+            // // when mouse down
+            // dot.on('mousedown', (e) => {
+            //     const x1 = e.pointer.x - 1, y1 = e.pointer.y - 1;
+            //     const x2 = 400, y2 = 400;
+            //     const connector = new fabric.Line([x1, y1, x2, y2], {
+            //         stroke: '#3592ee',
+            //         strokeWidth: 2,
+            //         fill: 'transparent'
+            //     });
+            //     canvas.add(connector);
+            // });
+
             img.on('moving', () => {
-                text.left = img.left + (img.width * img.scaleX)/2 - textWidth / 2;
+                text.left = img.left + (img.width * img.scaleX) / 2 - textWidth / 2;
                 text.top = img.top + img.height * img.scaleY + 10;
+                dot.left = img.left + (img.width * img.scaleX) / 2 - dot.radius;
+                dot.top = img.top + img.height * img.scaleY
                 text.setCoords();
+                dot.setCoords();
                 canvas.renderAll();
+            });
+
+            img.on('mousedown', (e) => {
+                setEnableConnector((prevState) => {
+                    const newState = !prevState;
+                    let dot;
+                    if (newState) {
+                        // canvas.getObjects().forEach((obj) => {
+                        //     if (obj.type === 'image') {
+                        //         obj.set({
+                        //             stroke: 'transparent',
+                        //             strokeWidth: 0,
+                        //         });
+                        //     }
+                        // });
+                        // if (e.target && e.target.type === 'image') {
+                        //     e.target.set({
+                        //         stroke: 'red',
+                        //         strokeWidth: 3,
+                        //     });
+                        //     activeObj = e.target;
+                        //     setStartObj(activeObj);
+                        // }
+                        // dot
+                        dot = new fabric.Circle({
+                            left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
+                            top: (img.aCoords.bl.y + img.aCoords.br.y) / 2 - 1,
+                            radius: 5,
+                            backgroundColor: 'transparent',
+                            fill: '#3592ee',
+                            hasControls: false,
+                            selectable: false
+                        });
+                        canvas.add(dot);
+                        dot.set({
+                            left: dot.left - dot.radius
+                        });
+                    }
+                    else {
+                        // e.target.set({
+                        //     stroke: 'transparent',
+                        //     strokeWidth: 0
+                        // });
+                        canvas.remove(dot);
+                    }
+                    return newState;
+                });
+                canvas.renderAll();
+
+                // setEnableConnector((prevState) => {
+                //     const newState = !prevState;
+                //     if (newState && activeObj) {
+                //         activeObj.set({
+                //             stroke: 'red',
+                //             strokeWidth: 3,
+                //         });
+                //         setStartObj(img);
+                //     } else {
+                //         img.set({
+                //             stroke: 'transparent',
+                //         });
+                //     }
+                //     canvas.renderAll();
+                //     return newState;
+                // });
             })
 
-            // Going to create connector
+
+
+
+
+
+
+
+
+            // FORM CODE
             // img.on('mousedown', (e) => {
-            //     setStartConnector(prevState => {
-            //         // console.log(prevState)
-            //         return !prevState;
+            //     setOpenForm(true);
+            //     setActiveFormDetails((prevDetails) => {
+            //         // const coords = { x: e.pointer.x + 120, y: e.pointer.y + 300 }; 
+            //         const coords = { x: e.target.aCoords.br.x + (e.target.width * e.target.scaleX), y: e.target.aCoords.br.y + 100 + (2* e.target.height * e.target.scaleY) }; 
+            //         console.log(e)
+            //         let component; 
+            //         switch(img.name){
+            //             case "Network":
+            //                 component = <Network handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Server":
+            //                 component = <EndDevice />;
+            //                 break;
+            //             case "Workstation":
+            //                 component = <EndDevice />;
+            //                 break;
+            //             case "Router":
+            //                 component = <Router />;
+            //                 break;
+            //             case "Laptop":
+            //                 component = <EndDevice />;
+            //                 break;
+            //             case "Mobile":
+            //                 component = <EndDevice />;
+            //                 break;
+            //         }
+            //         const obj = { coords, component }; 
+            //         console.log('Form details:', obj);
+            //         return { ...prevDetails, ...obj };
             //     });
-            //     if (startConnector) {
-            //         img.set({
-            //             stroke: 'red',
-            //             strokeWidth: 3
-            //         });
-            //         canvas.renderAll();
-            //     }
-            // })
-            // img.on('mouseup', (e) => {
-            //     img.set({
-            //         stroke: 'transparent',
-            //         strokeWidth: 0
-            //     });
-            //     canvas.renderAll(); 
-            // })
+            // });
+
+
+
+
+
+
+
+
+
+
+
 
             img.controls.deleteControl = new fabric.Control({
                 x: 0.5,
@@ -316,6 +445,7 @@ const FabricUI = () => {
                                     const activeObject = canvas.getActiveObject();
                                     canvas.remove(activeObject);
                                     canvas.remove(text);
+                                    canvas.remove(dot)
                                     canvas.renderAll();
                                 }
                             }
@@ -336,6 +466,10 @@ const FabricUI = () => {
 
         canvas.renderAll();
     }
+
+    useEffect(() => {
+        console.log(startObj?.name)
+    }, [enableConnector, startObj?.name]);
 
     return (
         // Container
@@ -436,6 +570,18 @@ const FabricUI = () => {
                         onReady={onReady}
                         className={`sample-canvas border border-gray-700 h-[100%] w-[100%]`}
                     />
+                    {openForm && (
+                        <div
+                            className="absolute bg-[#081830] shadow-lg flex flex-col rounded"
+                            style={{
+                                left: `${activeFormDetails.coords.x}px`,
+                                top: `${activeFormDetails.coords.y}px`,
+                                transform: 'translate(-50%, -50%)'
+                            }}
+                        >
+                            {activeFormDetails.component}
+                        </div>
+                    )}
                 </div>
 
             </div>
@@ -443,5 +589,6 @@ const FabricUI = () => {
         </div>
     )
 }
+
 
 export default FabricUI
