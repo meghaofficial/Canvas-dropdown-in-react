@@ -35,6 +35,9 @@ const STATE_IDLE = 'idle';
 const STATE_PANNING = 'panning';
 let canvasID = 0;
 let objID = 0;
+let connectorID = 0;
+let startObj = null, endObj = null;
+let connectorsSet = [];
 
 const FabricUI = () => {
     const { editor, onReady } = useFabricJSEditor();
@@ -42,9 +45,10 @@ const FabricUI = () => {
     const [toggleOn, setToggleOn] = useState(false);
     const [activeObjState, setActiveObjState] = useState(null);
     const [enablePanning, setEnablePanning] = useState(false);
-    const [enableConnector, setEnableConnector] = useState(false);
-    const [startObj, setStartObj] = useState(null);
-    const [endObj, setEndObj] = useState(null)
+    // const [enableConnector, setEnableConnector] = useState(false);
+    const [connectors, setConnectors] = useState([]);
+    // const [startObjState, setStartObjState] = useState(null);
+    // const [endObjState, setEndObjState] = useState(null)
     const [openForm, setOpenForm] = useState(false);
     const [activeFormDetails, setActiveFormDetails] = useState({
         coords: { x: 0, y: 0 }, component: null
@@ -253,107 +257,52 @@ const FabricUI = () => {
                 left: text.left - textWidth / 2
             });
 
-            // // dot
-            // const dot = new fabric.Circle({
-            //     left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
-            //     top: (img.aCoords.bl.y + img.aCoords.br.y) / 2 - 1,
-            //     radius: 5,
-            //     backgroundColor: 'transparent',
-            //     fill: '#3592ee',
-            //     hasControls: false,
-            //     selectable: false
-            // });
-            // canvas.add(dot);
-            // dot.set({
-            //     left: dot.left - dot.radius
-            // });
-
-            // // when mouse down
-            // dot.on('mousedown', (e) => {
-            //     const x1 = e.pointer.x - 1, y1 = e.pointer.y - 1;
-            //     const x2 = 400, y2 = 400;
-            //     const connector = new fabric.Line([x1, y1, x2, y2], {
-            //         stroke: '#3592ee',
-            //         strokeWidth: 2,
-            //         fill: 'transparent'
-            //     });
-            //     canvas.add(connector);
-            // });
-
             img.on('moving', () => {
                 text.left = img.left + (img.width * img.scaleX) / 2 - textWidth / 2;
                 text.top = img.top + img.height * img.scaleY + 10;
-                dot.left = img.left + (img.width * img.scaleX) / 2 - dot.radius;
-                dot.top = img.top + img.height * img.scaleY
                 text.setCoords();
-                dot.setCoords();
                 canvas.renderAll();
             });
 
-            img.on('mousedown', (e) => {
-                setEnableConnector((prevState) => {
-                    const newState = !prevState;
-                    let dot;
-                    if (newState) {
-                        // canvas.getObjects().forEach((obj) => {
-                        //     if (obj.type === 'image') {
-                        //         obj.set({
-                        //             stroke: 'transparent',
-                        //             strokeWidth: 0,
-                        //         });
-                        //     }
-                        // });
-                        // if (e.target && e.target.type === 'image') {
-                        //     e.target.set({
-                        //         stroke: 'red',
-                        //         strokeWidth: 3,
-                        //     });
-                        //     activeObj = e.target;
-                        //     setStartObj(activeObj);
-                        // }
-                        // dot
-                        dot = new fabric.Circle({
-                            left: (img.aCoords.bl.x + img.aCoords.br.x) / 2,
-                            top: (img.aCoords.bl.y + img.aCoords.br.y) / 2 - 1,
-                            radius: 5,
-                            backgroundColor: 'transparent',
-                            fill: '#3592ee',
-                            hasControls: false,
-                            selectable: false
-                        });
-                        canvas.add(dot);
-                        dot.set({
-                            left: dot.left - dot.radius
-                        });
-                    }
-                    else {
-                        // e.target.set({
-                        //     stroke: 'transparent',
-                        //     strokeWidth: 0
-                        // });
-                        canvas.remove(dot);
-                    }
-                    return newState;
-                });
-                canvas.renderAll();
+            // when clicked outside it should remove the active states 
+            canvas.on('mouse:down', (e) => {
+                const clickedObject = e.target;
+                if (!clickedObject) {
+                    img.set({
+                        stroke: 'transparent',
+                        strokeWidth: 0
+                    });
+                }
+            });
 
-                // setEnableConnector((prevState) => {
-                //     const newState = !prevState;
-                //     if (newState && activeObj) {
-                //         activeObj.set({
-                //             stroke: 'red',
-                //             strokeWidth: 3,
-                //         });
-                //         setStartObj(img);
-                //     } else {
-                //         img.set({
-                //             stroke: 'transparent',
-                //         });
-                //     }
-                //     canvas.renderAll();
-                //     return newState;
-                // });
-            })
+
+            img.on('mousedown', (e) => {
+                // removing stroke color from previous all img objects
+                canvas.getObjects().forEach((obj) => {
+                    if (obj.type === 'image') {
+                        obj.set({
+                            stroke: 'transparent',
+                            strokeWidth: 0
+                        });
+                    }
+                });
+                // adding stroke to active object
+                if (e.target && e.target.type === 'image') {
+                    e.target.set({
+                        stroke: 'red',
+                        strokeWidth: 1
+                    });
+                    activeObj = e.target;
+                    if (!startObj) {
+                        startObj = activeObj;
+                    }
+                    else if (!endObj) {
+                        endObj = activeObj;
+                        connectorID++;
+                    }
+                }
+                canvas.renderAll();
+            });
 
 
 
@@ -445,7 +394,6 @@ const FabricUI = () => {
                                     const activeObject = canvas.getActiveObject();
                                     canvas.remove(activeObject);
                                     canvas.remove(text);
-                                    canvas.remove(dot)
                                     canvas.renderAll();
                                 }
                             }
@@ -468,8 +416,145 @@ const FabricUI = () => {
     }
 
     useEffect(() => {
-        console.log(startObj?.name)
-    }, [enableConnector, startObj?.name]);
+        if (endObj) {
+            // Calculate the connector line's positions
+            const x1 = startObj.left + (startObj.width * startObj.scaleX) / 2;
+            const y1 = startObj.top + (startObj.height * startObj.scaleY) / 2;
+            const x2 = endObj.left + (endObj.width * endObj.scaleX) / 2;
+            const y2 = endObj.top;
+    
+            // Create the line connector
+            const lineConnector = new fabric.Line([x1, y1, x2, y2], {
+                stroke: 'white',
+                strokeWidth: 2,
+                selectable: false,
+                evented: false
+            });
+    
+            lineConnector.bringToFront();
+            canvas.add(lineConnector);
+            canvas.renderAll();
+    
+            // Check for existing connections
+            setConnectors((prevConn) => {
+                const alreadyExists = prevConn.some(conn => conn.startObj === startObj && conn.endObj === endObj);
+                if (!alreadyExists) {
+                    const newConn = {
+                        connector_id: connectorID,
+                        startObj,
+                        endObj,
+                        lineConnector
+                    };
+                    return [...prevConn, newConn];
+                }
+                return prevConn;
+            });
+    
+            // Reset start and end objects after a timeout
+            setTimeout(() => {
+                startObj = endObj = null;
+            }, 0);
+        }
+    
+        // Update connector position when the start object moves
+        const updateStartObjPosition = () => {
+            const conn = connectorsSet.find(conn => conn.startObj === startObj && conn.endObj === endObj);
+            if (conn) {
+                const x1 = startObj.left + (startObj.width * startObj.scaleX) / 2;
+                const y1 = startObj.top + (startObj.height * startObj.scaleY) / 2;
+                conn.lineConnector.set({ x1, y1 });
+                conn.lineConnector.setCoords();
+                canvas.renderAll();
+            }
+        };
+    
+        // Update connector position when the end object moves
+        const updateEndObjPosition = () => {
+            const conn = connectorsSet.find(conn => conn.startObj === startObj && conn.endObj === endObj);
+            if (conn) {
+                const x2 = endObj.left + (endObj.width * endObj.scaleX) / 2;
+                const y2 = endObj.top;
+                conn.lineConnector.set({ x2, y2 });
+                conn.lineConnector.setCoords();
+                canvas.renderAll();
+            }
+        };
+    
+        startObj?.on('moving', updateStartObjPosition);
+        endObj?.on('moving', updateEndObjPosition);
+
+        return () => {
+            startObj?.off('moving', updateStartObjPosition);
+            endObj?.off('moving', updateEndObjPosition);
+        };
+    }, [startObj?.name, endObj?.name]);
+    
+    // useEffect(() => {
+    //     if (endObj) {
+    //         const x1 = startObj.left + (startObj.width * startObj.scaleX) / 2;
+    //         const y1 = startObj.top + (startObj.height * startObj.scaleY) / 2;
+    //         const x2 = endObj.left + (endObj.width * endObj.scaleX) / 2;
+    //         const y2 = endObj.top;
+
+    //         const lineConnector = new fabric.Line([x1, y1, x2, y2], {
+    //             stroke: 'white',
+    //             strokeWidth: 2,
+    //             selectable: false,
+    //             evented: false
+    //         });
+    //         lineConnector.bringToFront();
+    //         canvas.add(lineConnector);
+    //         canvas.renderAll();
+
+    //         const alreadyExists = connectorsSet.some(conn => conn.startObj === startObj && conn.endObj === endObj);
+    //         if (!alreadyExists) {
+    //             const newConn = {
+    //                 connector_id: connectorID,
+    //                 startObj,
+    //                 endObj,
+    //                 lineConnector
+    //             };
+    //             connectorsSet = [...connectorsSet, newConn];
+    //         }
+    //         setConnectors((prevConn) => {
+    //             const alreadyExists = prevConn.some(conn => conn.startObj === startObj && conn.endObj === endObj);
+    //             if (!alreadyExists) {
+    //                 const newConn = {
+    //                     connector_id: connectorID,
+    //                     startObj,
+    //                     endObj,
+    //                     lineConnector
+    //                 };
+    //                 return [...prevConn, newConn];
+    //             }
+    //             return prevConn;
+    //         });
+
+    //         setTimeout(() => {
+    //             startObj = endObj = null;
+    //         }, 0);
+    //     }
+    //     startObj?.on('moving', (e) => {
+    //         connectorsSet[0].lineConnector.set({
+    //             x1: startObj?.left,
+    //             y1: startObj?.top
+    //         });
+    //         connectorsSet[0].lineConnector.setCoords();
+    //         canvas.renderAll();
+    //     });
+    //     endObj?.on('moving', (e) => {
+    //         connectorsSet[0].lineConnector.set({
+    //             x2: endObj?.left,
+    //             y2: endObj?.top
+    //         });
+    //         connectorsSet[0].lineConnector.setCoords();
+    //         canvas.renderAll();
+    //     });
+    // }, [startObj?.name, endObj?.name]);
+
+    useEffect(() => {
+        // console.log(connectors);
+    }, [connectors]);
 
     return (
         // Container
