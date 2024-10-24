@@ -46,3 +46,6 @@ Now delete functionality is working properly which was not working previously be
 
 ##### Text
 Text below the image is successfully added
+
+##### Line connectors
+Line connectors are done, but for capturing the movement of connectors with image object we have to capture the current start and current end object to get the current positions of current start and end objects.
