@@ -3,7 +3,10 @@ import { LiaToggleOffSolid } from "react-icons/lia";
 
 const EndDevice = ({ handleCloseForm }) => {
   return (
-    <div className='w-[350px]'>
+    <div className='w-[400px] h-[500px] overflow-y-auto' style={{
+      scrollbarWidth: 'thin',
+      scrollbarColor: '#193258 #081830',
+    }}>
 
       {/* heading & cancel icon */}
       <div className='flex items-center justify-between mx-4 my-3'>
@@ -27,16 +30,27 @@ const EndDevice = ({ handleCloseForm }) => {
       <div className='flex flex-col items-center justify-evenly px-3'>
         <input type="text" placeholder='Name' className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258]' />
         <input type="text" placeholder='Description' className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258]' />
-        <input type="file" />
-        <input type="text" placeholder='Gateway IP' className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258]' />
-        <input type="text" placeholder='Allocation Pools' className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258]' />
-        <input type="text" placeholder='DNS Name Server' className='w-full mt-1.5 mb-3 p-2 rounded-sm border-none outline-none bg-[#193258]' />
+        {/* file */}
+        <input type="file" className='w-full custom-file-input m-2' />
+        <p className=''>File information</p>
+        <select className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258] text-[#9ca3af] input'>
+          <option value="" key="">Select OS</option>
+          <option value="" key="">Linux</option>
+          <option value="" key="">Windows</option>
+        </select>
+        <input type="text" placeholder='Username' className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258]' />
+        <input type="text" placeholder='Password' className='w-full mt-1.5 mb-3 p-2 rounded-sm border-none outline-none bg-[#193258]' />
+        <select className='w-full my-1.5 p-2 rounded-sm border-none outline-none bg-[#193258] text-[#9ca3af]'>
+          <option value="" key="">Select Flavour</option>
+          <option value="" key="">Vanilla</option>
+          <option value="" key="">Chocolate</option>
+        </select>
       </div>
 
       {/* DHCP & Static */}
       <div className='flex my-2'>
         <span className='ms-3 me-2'>DHCP</span>
-        <LiaToggleOffSolid size={30} />
+        <LiaToggleOffSolid size={30} className='cursor-pointer' />
         <span className='ms-2'>Static</span>
       </div>
 

@@ -195,7 +195,6 @@ const FabricUI = () => {
         }
         objID++;
         let imgName = '';
-        let activeObj = null;
         switch (imgSrc) {
             case Networkwithpadding:
                 imgName = "Network";
@@ -250,13 +249,15 @@ const FabricUI = () => {
                 fontSize: 16,
                 fontFamily: 'Quicksand',
                 selectable: false,
-                hasControls: false
+                hasControls: false,
+                hoverCursor: 'default'
             });
             canvas.add(text);
             const textWidth = text.getBoundingRect().width;
             text.set({
                 left: text.left - textWidth / 2
             });
+            text.bringToFront();
 
             const dot = new fabric.Circle({
                 imageObj: img,
@@ -300,6 +301,7 @@ const FabricUI = () => {
                             evented: false
                         });
                         canvas.add(lineConnector);
+                        canvas.sendToBack(lineConnector);
                         canvas.renderAll();
                     });
                     canvas.on('mouse:up', (e) => {
@@ -310,6 +312,7 @@ const FabricUI = () => {
                                     x2: currDot.left + currDot.radius,
                                     y2: currDot.top + currDot.radius
                                 });
+                                endObj = e.target.imageObj;
                             }
                             if (e.target?.type === 'image') {
                                 const currImg = e.target;
@@ -317,9 +320,9 @@ const FabricUI = () => {
                                     x2: currImg.left + (currImg.width * currImg.scaleX) / 2,
                                     y2: currImg.top + (currImg.height * currImg.scaleY) + 6
                                 });
+                                endObj = e.target;
                             }
                             lineConnector?.setCoords();
-                            endObj = e.target.imageObj;
                             connectorsSet = [...connectorsSet, {
                                 connectorID: connectorsSet.length + 1,
                                 startObj,
@@ -327,8 +330,6 @@ const FabricUI = () => {
                                 lineConnector
                             }];
                             canvas.renderAll();
-                            // console.log("start obj - ", startObj?.name);
-                            // console.log("end obj - ", endObj?.name);
                         }
                         else {
                             startObj = null;
@@ -343,24 +344,30 @@ const FabricUI = () => {
             // YAHA MAI CONNECTORS MOVEMENT KO DEKH RHI HU WITH OBJECT
             canvas.on('object:moving', (e) => {
                 const movingObj = e.target;
-                // console.log(connectorsSet)
-
+            
                 connectorsSet.forEach(conn => {
                     if (conn.startObj === movingObj) {
-                        conn.lineConnector.set({
-                            x1: movingObj.left + movingObj.radius,
-                            y1: movingObj.top + movingObj.radius
-                        });
+                        if (movingObj.type === 'circle') {
+                            conn.lineConnector?.set({
+                                x1: movingObj.left + movingObj.radius,
+                                y1: movingObj.top + movingObj.radius
+                            });
+                        } else if (movingObj.type === 'image') {
+                            conn.lineConnector?.set({
+                                x1: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
+                                y1: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
+                            });
+                        }
                     }
-
+            
                     if (conn.endObj === movingObj) {
                         if (movingObj.type === 'circle') {
-                            conn.lineConnector.set({
+                            conn.lineConnector?.set({
                                 x2: movingObj.left + movingObj.radius,
                                 y2: movingObj.top + movingObj.radius
                             });
                         } else if (movingObj.type === 'image') {
-                            conn.lineConnector.set({
+                            conn.lineConnector?.set({
                                 x2: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
                                 y2: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
                             });
@@ -368,61 +375,70 @@ const FabricUI = () => {
                     }
                     conn.lineConnector?.setCoords();
                 });
-
+            
                 canvas.renderAll();
             });
+            
 
 
 
 
 
 
+            
+
+            // FORM CODE
+            img.on('mouseup', (e) => {
+                setOpenForm(true);
+                setActiveFormDetails((prevDetails) => {
+                    // const coords = { x: e.pointer.x + 120, y: e.pointer.y + 300 }; 
+                    const coords = { 
+                        x: img.aCoords.br.x, 
+                        y: img.aCoords.br.y + 250
+                    }; 
+                    let component; 
+                    switch(img.name){
+                        case "Network":
+                            component = <Network handleCloseForm={handleCloseForm} />;
+                            break;
+                        case "Server":
+                            component = <EndDevice handleCloseForm={handleCloseForm} />;
+                            break;
+                        case "Workstation":
+                            component = <EndDevice handleCloseForm={handleCloseForm} />;
+                            break;
+                        case "Router":
+                            component = <Router handleCloseForm={handleCloseForm} />;
+                            break;
+                        case "Laptop":
+                            component = <EndDevice handleCloseForm={handleCloseForm} />;
+                            break;
+                        case "Mobile":
+                            component = <EndDevice handleCloseForm={handleCloseForm} />;
+                            break;
+                    }
+                    const obj = { coords, component }; 
+                    // console.log('Form details:', obj);
+                    return { ...prevDetails, ...obj };
+                });
+            });
+            // when you click outside
+            canvas.on('mouse:down', (e) => {
+                const clickedObject = e.target;
+                if (!clickedObject) {
+                    setOpenForm(false);
+                }
+            });
 
             img.on('moving', () => {
                 text.left = img.left + (img.width * img.scaleX) / 2 - textWidth / 2;
                 text.top = img.top + img.height * img.scaleY + 10;
                 dot.left = img.left + (img.width * img.scaleX) / 2 - dot.radius,
-                    dot.top = img.top + img.height * img.scaleY + 3,
-                    text.setCoords();
+                dot.top = img.top + img.height * img.scaleY + 3,
+                text.setCoords();
                 dot.setCoords();
-
                 canvas.renderAll();
             });
-
-            // FORM CODE
-            // img.on('mousedown', (e) => {
-            //     setOpenForm(true);
-            //     setActiveFormDetails((prevDetails) => {
-            //         // const coords = { x: e.pointer.x + 120, y: e.pointer.y + 300 }; 
-            //         const coords = { x: e.target.aCoords.br.x + (e.target.width * e.target.scaleX), y: e.target.aCoords.br.y + 100 + (2* e.target.height * e.target.scaleY) }; 
-            //         console.log(e)
-            //         let component; 
-            //         switch(img.name){
-            //             case "Network":
-            //                 component = <Network handleCloseForm={handleCloseForm} />;
-            //                 break;
-            //             case "Server":
-            //                 component = <EndDevice />;
-            //                 break;
-            //             case "Workstation":
-            //                 component = <EndDevice />;
-            //                 break;
-            //             case "Router":
-            //                 component = <Router />;
-            //                 break;
-            //             case "Laptop":
-            //                 component = <EndDevice />;
-            //                 break;
-            //             case "Mobile":
-            //                 component = <EndDevice />;
-            //                 break;
-            //         }
-            //         const obj = { coords, component }; 
-            //         console.log('Form details:', obj);
-            //         return { ...prevDetails, ...obj };
-            //     });
-            // });
-
             img.controls.deleteControl = new fabric.Control({
                 x: 0.5,
                 y: -0.5,
@@ -485,7 +501,9 @@ const FabricUI = () => {
 
     useEffect(() => {
         // console.log(canvas?._objects.length);
-    }, [canvas]);
+        // console.log("start obj - ", startObj?.name);
+        // console.log("end obj - ", endObj?.name);
+    }, [connectorsSet]);
 
     return (
         // Container
@@ -588,11 +606,10 @@ const FabricUI = () => {
                     />
                     {openForm && (
                         <div
-                            className="absolute bg-[#081830] shadow-lg flex flex-col rounded"
+                            className="absolute bg-[#081830] flex flex-col rounded"
                             style={{
                                 left: `${activeFormDetails.coords.x}px`,
                                 top: `${activeFormDetails.coords.y}px`,
-                                transform: 'translate(-50%, -50%)'
                             }}
                         >
                             {activeFormDetails.component}
