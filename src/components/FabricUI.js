@@ -66,6 +66,18 @@ const FabricUI = () => {
         ctx.restore();
     }
 
+    function _getQBezierValue(t, p1, p2, p3) {
+        var iT = 1 - t;
+        return iT * iT * p1 + 2 * iT * t * p2 + t * t * p3;
+    }
+
+    function getQuadraticCurvePoint(startX, startY, cpX, cpY, endX, endY, position) {
+        return {
+            x: _getQBezierValue(position, startX, cpX, endX),
+            y: _getQBezierValue(position, startY, cpY, endY)
+        };
+    }
+
     const handleCloseForm = () => setOpenForm(false);
 
     // Background & Mousewheel zoom-in zoom-out
@@ -275,12 +287,15 @@ const FabricUI = () => {
                 left: dot.left - dot.radius
             });
 
+            img.set({ textObj: text, dotObj: dot });
+
 
 
 
 
             // CONNECTOR BAAP YHA BETHA HAI
             let lineConnector = null;
+            let arrow = null;
             canvas.on('mouse:down', (e) => {
                 if (e.target?.type === 'circle') {
                     const dotObj = e.target;
@@ -292,9 +307,27 @@ const FabricUI = () => {
                     canvas.on('mouse:move', (e) => {
 
                         if (lineConnector) canvas.remove(lineConnector);
+                        if (arrow) canvas.remove(arrow);
 
                         const x2 = e.pointer.x, y2 = e.pointer.y;
-                        lineConnector = new fabric.Line([x1, y1, x2, y2], {
+
+                        const deltaX = x2 - x1;
+                        const deltaY = y2 - y1;
+                        const angle = Math.atan2(deltaY, deltaX);
+                        const arrowSize = 15;
+                        arrow = new fabric.Triangle({
+                            name: 'arrow',
+                            left: x2,
+                            top: y2,
+                            width: arrowSize,
+                            height: arrowSize,
+                            fill: 'red',
+                            selectable: false,
+                            angle: (angle * 180 / Math.PI) + 90
+                        });
+                        canvas.add(arrow);
+
+                        lineConnector = new fabric.Line([x1, y1, arrow.getCenterPoint().x, arrow.getCenterPoint().y], {
                             stroke: '#3592ee',
                             strokeWidth: 2,
                             selectable: false,
@@ -312,6 +345,10 @@ const FabricUI = () => {
                                     x2: currDot.left + currDot.radius,
                                     y2: currDot.top + currDot.radius
                                 });
+                                arrow?.set({
+                                    left: currDot.left + currDot.radius,
+                                    top: currDot.top + currDot.radius
+                                });
                                 endObj = e.target.imageObj;
                             }
                             if (e.target?.type === 'image') {
@@ -320,32 +357,103 @@ const FabricUI = () => {
                                     x2: currImg.left + (currImg.width * currImg.scaleX) / 2,
                                     y2: currImg.top + (currImg.height * currImg.scaleY) + 6
                                 });
+                                arrow?.set({
+                                    left: currImg.left + (currImg.width * currImg.scaleX) / 2,
+                                    top: currImg.top + (currImg.height * currImg.scaleY)
+                                });
                                 endObj = e.target;
                             }
                             lineConnector?.setCoords();
+                            arrow?.setCoords();
                             connectorsSet = [...connectorsSet, {
                                 connectorID: connectorsSet.length + 1,
                                 startObj,
                                 endObj,
-                                lineConnector
+                                lineConnector,
+                                arrow
                             }];
                             canvas.renderAll();
                         }
                         else {
                             startObj = null;
                             canvas.remove(lineConnector);
+                            canvas.remove(arrow);
                         }
                         lineConnector = null;
+                        arrow = null;
                         canvas.off('mouse:move');
                     })
                 }
             });
 
             // YAHA MAI CONNECTORS MOVEMENT KO DEKH RHI HU WITH OBJECT
+            // canvas.on('object:moving', (e) => {
+            //     const movingObj = e.target;
+
+            //     connectorsSet.forEach(conn => {
+
+            //         let x1 = conn?.lineConnector?.x1, y1 = conn?.lineConnector?.y1;
+            //         let x2 = conn?.lineConnector?.x2, y2 = conn?.lineConnector?.y2;
+            //         const deltaX = x2 - x1;
+            //         const deltaY = y2 - y1;
+            //         const angle = Math.atan2(deltaY, deltaX);
+
+            //         if (conn.startObj === movingObj) {
+            //             if (movingObj.type === 'circle') {
+            //                 conn.lineConnector?.set({
+            //                     x1: movingObj.left + movingObj.radius,
+            //                     y1: movingObj.top + movingObj.radius
+            //                 });
+            //             } else if (movingObj.type === 'image') {
+            //                 conn.lineConnector?.set({
+            //                     x1: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
+            //                     y1: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
+            //                 });
+            //             }
+            //         }
+
+            //         if (conn.endObj === movingObj) {
+            //             if (movingObj.type === 'circle') {
+            //                 conn.lineConnector?.set({
+            //                     x2: movingObj.left + movingObj.radius,
+            //                     y2: movingObj.top + movingObj.radius
+            //                 });
+            //                 conn.arrow?.set({
+            //                     left: movingObj.left + movingObj.radius,
+            //                     top: movingObj.top + movingObj.radius,
+            //                     angle: (angle * 180 / Math.PI) + 90
+            //                 });
+            //             } else if (movingObj.type === 'image') {
+            //                 conn.lineConnector?.set({
+            //                     x2: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
+            //                     y2: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
+            //                 });
+            //                 conn.arrow?.set({
+            //                     left: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
+            //                     top: movingObj.top + (movingObj.height * movingObj.scaleY),
+            //                     angle: (angle * 180 / Math.PI) + 90
+            //                 });
+            //             }
+            //         }
+            //         conn.lineConnector?.setCoords();
+            //     });
+
+            //     canvas.renderAll();
+            // });
+
             canvas.on('object:moving', (e) => {
                 const movingObj = e.target;
-            
+
                 connectorsSet.forEach(conn => {
+
+                    let x1 = conn?.lineConnector?.x1, y1 = conn?.lineConnector?.y1;
+                    let x2 = conn?.lineConnector?.x2, y2 = conn?.lineConnector?.y2;
+                    const deltaX = x2 - x1;
+                    const deltaY = y2 - y1;
+                    const angle = Math.atan2(deltaY, deltaX);
+                    const arrowOffsetX = (conn?.arrow?.width / 2) * Math.cos(angle);
+                    const arrowOffsetY = (conn?.arrow?.width / 2) * Math.sin(angle);
+
                     if (conn.startObj === movingObj) {
                         if (movingObj.type === 'circle') {
                             conn.lineConnector?.set({
@@ -353,75 +461,93 @@ const FabricUI = () => {
                                 y1: movingObj.top + movingObj.radius
                             });
                         } else if (movingObj.type === 'image') {
+                            conn.arrow?.set({
+                                // left: conn?.endObj?.dotObj.left + conn?.endObj?.dotObj?.radius,
+                                // top: conn?.endObj?.dotObj.top + conn?.endObj?.dotObj?.radius,
+                                angle: (angle * 180) / Math.PI + 90
+                            });
                             conn.lineConnector?.set({
                                 x1: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
-                                y1: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
+                                y1: movingObj.top + (movingObj.height * movingObj.scaleY) + 6,
+                                x2: conn?.arrow?.getCenterPoint().x,
+                                y2: conn?.arrow?.getCenterPoint().y
                             });
                         }
                     }
-            
+
                     if (conn.endObj === movingObj) {
                         if (movingObj.type === 'circle') {
                             conn.lineConnector?.set({
                                 x2: movingObj.left + movingObj.radius,
                                 y2: movingObj.top + movingObj.radius
                             });
+                            conn.arrow?.set({
+                                left: movingObj.left + movingObj.radius,
+                                top: movingObj.top + movingObj.radius,
+                                angle: (angle * 180 / Math.PI) + 90
+                            });
                         } else if (movingObj.type === 'image') {
                             conn.lineConnector?.set({
                                 x2: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
                                 y2: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
                             });
+                            conn.arrow?.set({
+                                left: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
+                                top: movingObj.top + (movingObj.height * movingObj.scaleY),
+                                angle: (angle * 180 / Math.PI) + 90
+                            });
                         }
                     }
+                    conn.arrow?.setCoords();
                     conn.lineConnector?.setCoords();
                 });
-            
+
                 canvas.renderAll();
             });
-            
 
 
 
 
 
 
-            
+
+
 
             // FORM CODE
-            img.on('mouseup', (e) => {
-                setOpenForm(true);
-                setActiveFormDetails((prevDetails) => {
-                    // const coords = { x: e.pointer.x + 120, y: e.pointer.y + 300 }; 
-                    const coords = { 
-                        x: img.aCoords.br.x, 
-                        y: img.aCoords.br.y + 250
-                    }; 
-                    let component; 
-                    switch(img.name){
-                        case "Network":
-                            component = <Network handleCloseForm={handleCloseForm} />;
-                            break;
-                        case "Server":
-                            component = <EndDevice handleCloseForm={handleCloseForm} />;
-                            break;
-                        case "Workstation":
-                            component = <EndDevice handleCloseForm={handleCloseForm} />;
-                            break;
-                        case "Router":
-                            component = <Router handleCloseForm={handleCloseForm} />;
-                            break;
-                        case "Laptop":
-                            component = <EndDevice handleCloseForm={handleCloseForm} />;
-                            break;
-                        case "Mobile":
-                            component = <EndDevice handleCloseForm={handleCloseForm} />;
-                            break;
-                    }
-                    const obj = { coords, component }; 
-                    // console.log('Form details:', obj);
-                    return { ...prevDetails, ...obj };
-                });
-            });
+            // img.on('mouseup', (e) => {
+            //     setOpenForm(true);
+            //     setActiveFormDetails((prevDetails) => {
+            //         // const coords = { x: e.pointer.x + 120, y: e.pointer.y + 300 }; 
+            //         const coords = {
+            //             x: img.aCoords.br.x,
+            //             y: img.aCoords.br.y + 250
+            //         };
+            //         let component;
+            //         switch (img.name) {
+            //             case "Network":
+            //                 component = <Network handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Server":
+            //                 component = <EndDevice handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Workstation":
+            //                 component = <EndDevice handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Router":
+            //                 component = <Router handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Laptop":
+            //                 component = <EndDevice handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //             case "Mobile":
+            //                 component = <EndDevice handleCloseForm={handleCloseForm} />;
+            //                 break;
+            //         }
+            //         const obj = { coords, component };
+            //         // console.log('Form details:', obj);
+            //         return { ...prevDetails, ...obj };
+            //     });
+            // });
             // when you click outside
             canvas.on('mouse:down', (e) => {
                 const clickedObject = e.target;
@@ -434,8 +560,8 @@ const FabricUI = () => {
                 text.left = img.left + (img.width * img.scaleX) / 2 - textWidth / 2;
                 text.top = img.top + img.height * img.scaleY + 10;
                 dot.left = img.left + (img.width * img.scaleX) / 2 - dot.radius,
-                dot.top = img.top + img.height * img.scaleY + 3,
-                text.setCoords();
+                    dot.top = img.top + img.height * img.scaleY + 3,
+                    text.setCoords();
                 dot.setCoords();
                 canvas.renderAll();
             });
