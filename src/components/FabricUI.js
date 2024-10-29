@@ -66,18 +66,6 @@ const FabricUI = () => {
         ctx.restore();
     }
 
-    function _getQBezierValue(t, p1, p2, p3) {
-        var iT = 1 - t;
-        return iT * iT * p1 + 2 * iT * t * p2 + t * t * p3;
-    }
-
-    function getQuadraticCurvePoint(startX, startY, cpX, cpY, endX, endY, position) {
-        return {
-            x: _getQBezierValue(position, startX, cpX, endX),
-            y: _getQBezierValue(position, startY, cpY, endY)
-        };
-    }
-
     const handleCloseForm = () => setOpenForm(false);
 
     // Background & Mousewheel zoom-in zoom-out
@@ -338,8 +326,8 @@ const FabricUI = () => {
                         canvas.renderAll();
                     });
                     canvas.on('mouse:up', (e) => {
-                        if (e.target?.type === 'image' || e.target?.type === 'circle') {
-                            if (e.target?.type === 'circle') {
+                        if (e.target?.type === 'image' || e.target?.type === 'circle' || e.target?.type === 'triangle') {
+                            if (e.target?.type === 'circle' || e.target?.type === 'triangle') {
                                 const currDot = e.target;
                                 lineConnector?.set({
                                     x2: currDot.left + currDot.radius,
@@ -387,60 +375,6 @@ const FabricUI = () => {
             });
 
             // YAHA MAI CONNECTORS MOVEMENT KO DEKH RHI HU WITH OBJECT
-            // canvas.on('object:moving', (e) => {
-            //     const movingObj = e.target;
-
-            //     connectorsSet.forEach(conn => {
-
-            //         let x1 = conn?.lineConnector?.x1, y1 = conn?.lineConnector?.y1;
-            //         let x2 = conn?.lineConnector?.x2, y2 = conn?.lineConnector?.y2;
-            //         const deltaX = x2 - x1;
-            //         const deltaY = y2 - y1;
-            //         const angle = Math.atan2(deltaY, deltaX);
-
-            //         if (conn.startObj === movingObj) {
-            //             if (movingObj.type === 'circle') {
-            //                 conn.lineConnector?.set({
-            //                     x1: movingObj.left + movingObj.radius,
-            //                     y1: movingObj.top + movingObj.radius
-            //                 });
-            //             } else if (movingObj.type === 'image') {
-            //                 conn.lineConnector?.set({
-            //                     x1: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
-            //                     y1: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
-            //                 });
-            //             }
-            //         }
-
-            //         if (conn.endObj === movingObj) {
-            //             if (movingObj.type === 'circle') {
-            //                 conn.lineConnector?.set({
-            //                     x2: movingObj.left + movingObj.radius,
-            //                     y2: movingObj.top + movingObj.radius
-            //                 });
-            //                 conn.arrow?.set({
-            //                     left: movingObj.left + movingObj.radius,
-            //                     top: movingObj.top + movingObj.radius,
-            //                     angle: (angle * 180 / Math.PI) + 90
-            //                 });
-            //             } else if (movingObj.type === 'image') {
-            //                 conn.lineConnector?.set({
-            //                     x2: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
-            //                     y2: movingObj.top + (movingObj.height * movingObj.scaleY) + 6
-            //                 });
-            //                 conn.arrow?.set({
-            //                     left: movingObj.left + (movingObj.width * movingObj.scaleX) / 2,
-            //                     top: movingObj.top + (movingObj.height * movingObj.scaleY),
-            //                     angle: (angle * 180 / Math.PI) + 90
-            //                 });
-            //             }
-            //         }
-            //         conn.lineConnector?.setCoords();
-            //     });
-
-            //     canvas.renderAll();
-            // });
-
             canvas.on('object:moving', (e) => {
                 const movingObj = e.target;
 
@@ -580,6 +514,13 @@ const FabricUI = () => {
                             canvas.remove(activeObject);
                             canvas.remove(dot);
                             canvas.remove(text);
+                            connectorsSet = connectorsSet.filter(conn => {
+                                const shouldRemove = (conn.startObj === activeObject || conn.endObj === activeObject);
+                                canvas.remove(conn.lineConnector);
+                                canvas.remove(conn.arrow);
+
+                                return !shouldRemove;
+                            });
                             canvas.renderAll();
                         }
                     }
@@ -604,6 +545,14 @@ const FabricUI = () => {
                                     canvas.remove(activeObject);
                                     canvas.remove(dot);
                                     canvas.remove(text);
+                                    // console.log(connectorsSet)
+                                    connectorsSet = connectorsSet.filter(conn => {
+                                        const shouldRemove = (conn.startObj === activeObject || conn.endObj === activeObject);
+                                        canvas.remove(conn.lineConnector);
+                                        canvas.remove(conn.arrow);
+        
+                                        return !shouldRemove;
+                                    });
                                     canvas.renderAll();
                                 }
                             }

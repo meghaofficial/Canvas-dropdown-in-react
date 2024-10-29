@@ -52,3 +52,6 @@ Line connectors are done, but for capturing the movement of connectors with imag
 
 ##### End Device & Connector
 End device form is partial done, connector movement with the object is done
+
+
+so many connectors in connectorSet - Resolve!
