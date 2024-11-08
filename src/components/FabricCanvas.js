@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import desktop from '../images/desktop.png';
-import internet from '../images/internet.png';
-import workstation from '../images/workstation.png';
-import cancel from '../images/icons8-cancel-30.png';
-import edit from '../images/icons8-edit-32.png';
+import desktop from '../images/workstation(g).png';
+import internet from '../images/mobile(g).png';
+import workstation from '../images/laptop(g).png';
+import cancel from '../images/network(g).png';
+import edit from '../images/router(g).png';
 import { fabric } from "fabric";
 import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 // import { FaWindowClose } from "react-icons/fa";
@@ -32,6 +32,7 @@ const FabricCanvas = () => {
             // Adding a FabricImage
             const fabricImage = new fabric.Image(
                 imgElement, {
+                aaaaa: "aaaa",
                 id: objID,
                 localId: canvaImages.length + 1,
                 left: e.clientX - 300,
@@ -67,6 +68,7 @@ const FabricCanvas = () => {
 
             // Adding a imageText
             const imageText = new fabric.Text("hello", {
+                aaaaa: "aaaaa",
                 left: (x3 + x4) / 2,
                 top: (y3 + y4) / 2 + 6,
                 fontSize: 24,
@@ -372,7 +374,7 @@ const FabricCanvas = () => {
     // Export function
     const handleExport = () => {
         const json = JSON.stringify(editor?.canvas.toJSON());
-        console.log(json)
+        console.log(JSON.parse(json))
         // let formArray = JSON.parse(localStorage.getItem('Forms')) || [];
         // const blob = new Blob([JSON.stringify(formArray, null, 2)], {
         //     type: 'application/json'
